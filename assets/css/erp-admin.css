@@ -1,0 +1,836 @@
+/**
+ * Obydullah Restaurant ERP - Admin Styles
+ * @package Obydullah_ERP
+ * @since 1.0.0
+ */
+
+/* ============================================
+   General Layout
+   ============================================ */
+
+.wrap {
+    margin-top: 20px;
+}
+
+.wrap h1.wp-heading-inline {
+    margin-bottom: 15px;
+}
+
+.orerp-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.orerp-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.orerp-card-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* ============================================
+   Summary Cards (Dashboard)
+   ============================================ */
+
+.orerp-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.orerp-summary-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    border-left: 4px solid #0073aa;
+}
+
+.orerp-summary-card.green {
+    border-left-color: #46b450;
+}
+
+.orerp-summary-card.red {
+    border-left-color: #dc3232;
+}
+
+.orerp-summary-card.orange {
+    border-left-color: #ffb900;
+}
+
+.orerp-summary-card.blue {
+    border-left-color: #0073aa;
+}
+
+.orerp-summary-card.purple {
+    border-left-color: #826eb4;
+}
+
+.orerp-summary-card .label {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.orerp-summary-card .value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1d2327;
+    margin: 0;
+}
+
+.orerp-summary-card .sublabel {
+    font-size: 12px;
+    color: #999;
+    margin-top: 5px;
+}
+
+/* ============================================
+   Tables
+   ============================================ */
+
+.orerp-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.orerp-table th,
+.orerp-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.orerp-table th {
+    background: #f6f7f7;
+    font-weight: 600;
+    font-size: 13px;
+    color: #50575e;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.orerp-table tbody tr:hover {
+    background: #f9f9f9;
+}
+
+.orerp-table .text-right {
+    text-align: right;
+}
+
+.orerp-table .text-center {
+    text-align: center;
+}
+
+.orerp-table .status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.orerp-table .status-badge.active,
+.orerp-table .status-badge.completed,
+.orerp-table .status-badge.received {
+    background: #d4edda;
+    color: #155724;
+}
+
+.orerp-table .status-badge.inactive,
+.orerp-table .status-badge.cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.orerp-table .status-badge.pending,
+.orerp-table .status-badge.draft {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.orerp-table .status-badge.preparing,
+.orerp-table .status-badge.partial {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.orerp-table .status-badge.ready,
+.orerp-table .status-badge.in_transit {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+/* ============================================
+   Forms
+   ============================================ */
+
+.orerp-form .form-group {
+    margin-bottom: 15px;
+}
+
+.orerp-form .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #1d2327;
+}
+
+.orerp-form .form-group .required {
+    color: #dc3232;
+}
+
+.orerp-form input[type="text"],
+.orerp-form input[type="number"],
+.orerp-form input[type="email"],
+.orerp-form input[type="tel"],
+.orerp-form input[type="date"],
+.orerp-form input[type="time"],
+.orerp-form input[type="url"],
+.orerp-form select,
+.orerp-form textarea {
+    width: 100%;
+    max-width: 400px;
+}
+
+.orerp-form textarea {
+    min-height: 80px;
+}
+
+.orerp-form .form-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.orerp-form .form-row > .form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+
+.orerp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid;
+    line-height: 1.4;
+}
+
+.orerp-btn-primary {
+    background: #2271b1;
+    border-color: #2271b1;
+    color: #fff;
+}
+
+.orerp-btn-primary:hover {
+    background: #135e96;
+    border-color: #135e96;
+    color: #fff;
+}
+
+.orerp-btn-success {
+    background: #00a32a;
+    border-color: #00a32a;
+    color: #fff;
+}
+
+.orerp-btn-success:hover {
+    background: #008a20;
+    border-color: #008a20;
+    color: #fff;
+}
+
+.orerp-btn-danger {
+    background: #b32d2e;
+    border-color: #b32d2e;
+    color: #fff;
+}
+
+.orerp-btn-danger:hover {
+    background: #a02324;
+    border-color: #a02324;
+    color: #fff;
+}
+
+.orerp-btn-outline {
+    background: transparent;
+    border-color: #2271b1;
+    color: #2271b1;
+}
+
+.orerp-btn-outline:hover {
+    background: #2271b1;
+    color: #fff;
+}
+
+.orerp-btn-sm {
+    padding: 3px 8px;
+    font-size: 12px;
+}
+
+/* ============================================
+   Filters & Search
+   ============================================ */
+
+.orerp-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f6f7f7;
+    border: 1px solid #e2e4e7;
+    border-radius: 4px;
+}
+
+.orerp-filters .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.orerp-filters .filter-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #50575e;
+}
+
+.orerp-filters .filter-group input,
+.orerp-filters .filter-group select {
+    min-width: 150px;
+}
+
+.orerp-filters .filter-actions {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+/* ============================================
+   Pagination
+   ============================================ */
+
+.orerp-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.orerp-pagination .displaying-num {
+    font-size: 13px;
+    color: #646970;
+}
+
+.orerp-pagination .pagination-links {
+    display: flex;
+    gap: 5px;
+}
+
+.orerp-pagination .pagination-links a,
+.orerp-pagination .pagination-links span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 6px;
+    border: 1px solid #ccd0d4;
+    border-radius: 3px;
+    background: #fff;
+    color: #2271b1;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.orerp-pagination .pagination-links span.current {
+    background: #2271b1;
+    border-color: #2271b1;
+    color: #fff;
+}
+
+.orerp-pagination .pagination-links a:hover {
+    background: #f6f7f7;
+}
+
+/* ============================================
+   Modal
+   ============================================ */
+
+.orerp-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 100000;
+    justify-content: center;
+    align-items: center;
+}
+
+.orerp-modal-overlay.active {
+    display: flex;
+}
+
+.orerp-modal {
+    background: #fff;
+    border-radius: 4px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.orerp-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.orerp-modal-header h2 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.orerp-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    line-height: 1;
+}
+
+.orerp-modal-close:hover {
+    color: #000;
+}
+
+.orerp-modal-body {
+    padding: 20px;
+}
+
+.orerp-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+}
+
+/* ============================================
+   Loading & Empty States
+   ============================================ */
+
+.orerp-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.orerp-loading .spinner {
+    margin: 0 auto 10px;
+}
+
+.orerp-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.orerp-empty .dashicons {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 10px;
+    color: #ccc;
+}
+
+/* ============================================
+   Tabs
+   ============================================ */
+
+.orerp-tabs {
+    display: flex;
+    border-bottom: 1px solid #ccd0d4;
+    margin-bottom: 20px;
+}
+
+.orerp-tabs .tab {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    color: #50575e;
+    transition: all 0.2s;
+}
+
+.orerp-tabs .tab:hover {
+    color: #135e96;
+}
+
+.orerp-tabs .tab.active {
+    color: #1d2327;
+    border-bottom-color: #2271b1;
+    font-weight: 600;
+}
+
+.orerp-tab-content {
+    display: none;
+}
+
+.orerp-tab-content.active {
+    display: block;
+}
+
+/* ============================================
+   Branch Selector
+   ============================================ */
+
+.orerp-branch-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 20px;
+    padding: 4px 10px;
+    background: #f0f0f1;
+    border-radius: 3px;
+    border: 1px solid #dcdcde;
+}
+
+.orerp-branch-selector label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #50575e;
+    margin: 0;
+}
+
+.orerp-branch-selector select {
+    min-width: 180px;
+    margin: 0;
+}
+
+/* ============================================
+   Print Styles
+   ============================================ */
+
+@media print {
+    .wp-admin-menubarr,
+    #adminmenuback,
+    #adminmenumain,
+    #adminbarquicklinks,
+    #wpadminbar,
+    .orerp-filters,
+    .orerp-pagination,
+    .orerp-btn,
+    .page-title-action {
+        display: none !important;
+    }
+
+    #wpcontent,
+    #wpbody {
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+    }
+
+    .orerp-table th,
+    .orerp-table td {
+        border: 1px solid #ddd;
+    }
+}
+
+/* ============================================
+   Kitchen Display System (KDS)
+   ============================================ */
+
+.kitchen-stats-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.kitchen-stat-card {
+    flex: 1;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 15px 20px;
+    text-align: center;
+    border-top: 3px solid #0073aa;
+}
+
+.kitchen-stat-card.preparing {
+    border-top-color: #ffb900;
+}
+
+.kitchen-stat-card.ready {
+    border-top-color: #46b450;
+}
+
+.kitchen-stat-card.completed {
+    border-top-color: #826eb4;
+}
+
+.kitchen-stat-card .stat-number {
+    display: block;
+    font-size: 32px;
+    font-weight: 700;
+    color: #1d2327;
+    line-height: 1.2;
+}
+
+.kitchen-stat-card .stat-label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}
+
+.kitchen-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 15px;
+    min-height: 100px;
+}
+
+.kitchen-grid .kds-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+.kds-card {
+    background: #fff;
+    border: 1px solid #dcdcde;
+    border-radius: 6px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+}
+
+.kds-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.kds-card .kds-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 0;
+}
+
+.kds-order-num {
+    font-weight: 700;
+    font-size: 16px;
+    color: #1d2327;
+}
+
+.kds-priority {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: #f0f0f1;
+    color: #50575e;
+}
+
+.kds-priority.high {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.kds-priority.urgent {
+    background: #f8d7da;
+    color: #721c24;
+    animation: kds-blink 1s infinite;
+}
+
+@keyframes kds-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.kds-card-body {
+    padding: 10px 15px;
+}
+
+.kds-order-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 6px;
+}
+
+.kds-station {
+    background: #f0f0f1;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+.kds-time {
+    font-weight: 600;
+    color: #dc3232;
+}
+
+.kds-order-id {
+    font-size: 13px;
+    color: #50575e;
+    margin-bottom: 4px;
+}
+
+.kds-notes {
+    font-size: 12px;
+    color: #888;
+    font-style: italic;
+    margin-top: 4px;
+}
+
+.kds-est {
+    font-size: 11px;
+    color: #999;
+    margin-top: 4px;
+}
+
+.kds-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 15px;
+    background: #fafafa;
+    border-top: 1px solid #eee;
+}
+
+.kds-status-badge {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 3px;
+}
+
+.kds-status-badge.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.kds-status-badge.preparing {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.kds-status-badge.ready {
+    background: #d4edda;
+    color: #155724;
+}
+
+.kds-status-badge.completed {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+.kds-status-badge.cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.kds-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.kds-card.normal {
+    border-left: 3px solid #0073aa;
+}
+
+.kds-card.high {
+    border-left: 3px solid #ffb900;
+}
+
+.kds-card.urgent {
+    border-left: 3px solid #dc3232;
+}
+
+.kds-card.kds-card-completed {
+    opacity: 0.6;
+}
+
+/* Ingredients table in recipe form */
+#ingredients-table .regular-text {
+    min-width: 180px;
+}
+
+#ingredients-table .small-text {
+    width: 80px;
+}
+
+/* ============================================
+   Accounting Status Colors
+   ============================================ */
+
+.status-badge.asset {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.status-badge.liability {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-badge.equity {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.revenue {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-badge.expense {
+    background: #fff3cd;
+    color: #856404;
+}
