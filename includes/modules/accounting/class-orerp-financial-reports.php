@@ -35,19 +35,19 @@ class Obydullah_ERP_Financial_Reports
      * @param string $to   End date (inclusive).
      * @return array account_id => ['debit'=>float,'credit'=>float]
      */
-    private function get_posted_totals($from = '', $to = '')
+    private function orerp_get_posted_totals($from = 'orerp_', $to = 'orerp_')
     {
         global $wpdb;
 
         $where   = ' AND je.is_posted = 1';
         $prepare = [];
 
-        if (Obydullah_ERP_Helpers::is_valid_date($from)) {
+        if (Obydullah_ERP_Helpers::orerp_is_valid_date($from)) {
             $where   .= ' AND je.date >= %s';
             $prepare[] = $from;
         }
 
-        if (Obydullah_ERP_Helpers::is_valid_date($to)) {
+        if (Obydullah_ERP_Helpers::orerp_is_valid_date($to)) {
             $where   .= ' AND je.date <= %s';
             $prepare[] = $to;
         }
@@ -94,14 +94,14 @@ class Obydullah_ERP_Financial_Reports
      * @param string $to   End date.
      * @return array
      */
-    public function get_profit_loss($from = '', $to = '')
+    public function orerp_get_profit_loss($from = 'orerp_', $to = 'orerp_')
     {
         global $wpdb;
 
-        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : '1970-01-01';
-        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
+        $from = Obydullah_ERP_Helpers::orerp_is_valid_date($from) ? $from : '1970-01-01';
+        $to   = Obydullah_ERP_Helpers::orerp_is_valid_date($to) ? $to : gmdate('Y-m-d');
 
-        $totals = $this->get_posted_totals($from, $to);
+        $totals = $this->orerp_get_posted_totals($from, $to);
 
         $revenue_items = [];
         $expense_items = [];
@@ -151,14 +151,14 @@ class Obydullah_ERP_Financial_Reports
      * @param string $to   End date.
      * @return array
      */
-    public function get_account_breakdown($from = '', $to = '')
+    public function orerp_get_account_breakdown($from = 'orerp_', $to = 'orerp_')
     {
         global $wpdb;
 
-        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : gmdate('Y-m-01');
-        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
+        $from = Obydullah_ERP_Helpers::orerp_is_valid_date($from) ? $from : gmdate('Y-m-01');
+        $to   = Obydullah_ERP_Helpers::orerp_is_valid_date($to) ? $to : gmdate('Y-m-d');
 
-        $totals = $this->get_posted_totals($from, $to);
+        $totals = $this->orerp_get_posted_totals($from, $to);
 
         $accounts = $wpdb->get_results($wpdb->prepare("SELECT id, code, name, type FROM {$this->table_accounts} WHERE is_active = 1 AND 1 = %d ORDER BY code", 1)) ?: [];
 
@@ -184,13 +184,13 @@ class Obydullah_ERP_Financial_Reports
      * @param string $as_of Balances are accumulated up to and including this date.
      * @return array
      */
-    public function get_balance_sheet($as_of = '')
+    public function orerp_get_balance_sheet($as_of = 'orerp_')
     {
         global $wpdb;
 
-        $as_of = Obydullah_ERP_Helpers::is_valid_date($as_of) ? $as_of : gmdate('Y-m-d');
+        $as_of = Obydullah_ERP_Helpers::orerp_is_valid_date($as_of) ? $as_of : gmdate('Y-m-d');
 
-        $totals = $this->get_posted_totals('', $as_of);
+        $totals = $this->orerp_get_posted_totals('orerp_', $as_of);
 
         $result = [];
 

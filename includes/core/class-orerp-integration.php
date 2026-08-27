@@ -18,11 +18,11 @@ class Obydullah_ERP_Integration
 {
     public function __construct()
     {
-        add_action('woocommerce_order_status_completed', [$this, 'handle_order_completed'], 10, 1);
-        add_action('woocommerce_payment_complete', [$this, 'handle_payment_complete'], 10, 1);
+        add_action('woocommerce_order_status_completed', [$this, 'orerp_handle_order_completed'], 10, 1);
+        add_action('woocommerce_payment_complete', [$this, 'orerp_handle_payment_complete'], 10, 1);
 
         // Obydullah Restaurant POS Lite integration point.
-        add_action('orpl_process_sale', [$this, 'handle_pos_sale'], 10, 2);
+        add_action('orpl_process_sale', [$this, 'orerp_handle_pos_sale'], 10, 2);
     }
 
     /**
@@ -35,9 +35,9 @@ class Obydullah_ERP_Integration
      * @param int $order_id WooCommerce order ID.
      * @return void
      */
-    public function handle_order_completed($order_id)
+    public function orerp_handle_order_completed($order_id)
     {
-        $this->record_sale($order_id, 'wc_order');
+        $this->orerp_record_sale($order_id, 'wc_order');
     }
 
     /**
@@ -46,9 +46,9 @@ class Obydullah_ERP_Integration
      * @param int $order_id WooCommerce order ID.
      * @return void
      */
-    public function handle_payment_complete($order_id)
+    public function orerp_handle_payment_complete($order_id)
     {
-        $this->record_sale($order_id, 'wc_order');
+        $this->orerp_record_sale($order_id, 'wc_order');
     }
 
     /**
@@ -58,13 +58,13 @@ class Obydullah_ERP_Integration
      * @param mixed $data     Optional payload from the POS plugin.
      * @return void
      */
-    public function handle_pos_sale($order_id, $data = [])
+    public function orerp_handle_pos_sale($order_id, $data = [])
     {
         if (is_array($order_id) && isset($order_id['order_id'])) {
             $order_id = $order_id['order_id'];
         }
 
-        $this->record_sale(intval($order_id), 'pos_sale');
+        $this->orerp_record_sale(intval($order_id), 'pos_sale');
     }
 
     /**
@@ -75,7 +75,7 @@ class Obydullah_ERP_Integration
      * @param string $ref_type    Reference type ('wc_order' or 'pos_sale').
      * @return bool|WP_Error
      */
-    public function record_sale($order_id, $ref_type = 'wc_order')
+    public function orerp_record_sale($order_id, $ref_type = 'wc_order')
     {
         $order_id = intval($order_id);
 
@@ -83,7 +83,7 @@ class Obydullah_ERP_Integration
             return false;
         }
 
-        if ($this->journal_entry_exists($ref_type, $order_id)) {
+        if ($this->orerp_journal_entry_exists($ref_type, $order_id)) {
             return false;
         }
 
@@ -115,7 +115,7 @@ class Obydullah_ERP_Integration
 
         $journal = new Obydullah_ERP_Journal_Entries();
 
-        $result = $journal->create_entry([
+        $result = $journal->orerp_create_entry([
             'date'           => $order->get_date_created() ? $order->get_date_created()->date('Y-m-d') : current_time('Y-m-d'),
             'description'    => sprintf('Sale completed - Order #%s', $order->get_order_number()),
             'reference_type' => $ref_type,
@@ -133,7 +133,7 @@ class Obydullah_ERP_Integration
      * @param int    $ref_id   Reference ID.
      * @return bool
      */
-    private function journal_entry_exists($ref_type, $ref_id)
+    private function orerp_journal_entry_exists($ref_type, $ref_id)
     {
         global $wpdb;
 

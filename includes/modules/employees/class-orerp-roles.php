@@ -20,7 +20,7 @@ class Obydullah_ERP_Roles
      *
      * @return array
      */
-    public static function get_capabilities()
+    public static function orerp_get_capabilities()
     {
         return [
             'orerp_admin'     => __('Full ERP administration', 'obydullah-restaurant-erp'),
@@ -34,9 +34,9 @@ class Obydullah_ERP_Roles
      *
      * @return void
      */
-    public static function register_roles()
+    public static function orerp_register_roles()
     {
-        $full = array_keys(self::get_capabilities());
+        $full = array_keys(self::orerp_get_capabilities());
 
         add_role(
             'restaurant_manager',
@@ -65,7 +65,7 @@ class Obydullah_ERP_Roles
         // Give administrators all ERP capabilities as well.
         $admin = get_role('administrator');
         if ($admin) {
-            foreach (array_keys(self::get_capabilities()) as $cap) {
+            foreach (array_keys(self::orerp_get_capabilities()) as $cap) {
                 $admin->add_cap($cap);
             }
         }
@@ -73,13 +73,13 @@ class Obydullah_ERP_Roles
 
     public function __construct()
     {
-        add_action('init', [__CLASS__, 'register_roles']);
+        add_action('init', [__CLASS__, 'orerp_register_roles']);
 
-        add_action('wp_ajax_orerp_get_employee_roles', [$this, 'ajax_get_employee_roles']);
-        add_action('wp_ajax_orerp_assign_employee_role', [$this, 'ajax_assign_employee_role']);
+        add_action('wp_ajax_orerp_get_employee_roles', [$this, 'orerp_ajax_get_employee_roles']);
+        add_action('wp_ajax_orerp_assign_employee_role', [$this, 'orerp_ajax_assign_employee_role']);
     }
 
-    public function render_page()
+    public function orerp_render_page()
     {
         ?>
         <div class="wrap">
@@ -110,12 +110,12 @@ class Obydullah_ERP_Roles
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($this->get_role_capabilities() as $role_key => $cap_list): ?>
+                        <?php foreach ($this->orerp_get_role_capabilities() as $role_key => $cap_list): ?>
                         <tr>
                             <td><strong><?php echo esc_html(wp_roles()->roles[$role_key]['name'] ?? $role_key); ?></strong></td>
                             <td>
                                 <?php
-                                $labels = self::get_capabilities();
+                                $labels = self::orerp_get_capabilities();
                                 foreach ($cap_list as $cap) {
                                     if (isset($labels[$cap])) {
                                         printf('<span class="status-badge active">%s</span> ', esc_html($labels[$cap]));
@@ -137,9 +137,9 @@ class Obydullah_ERP_Roles
      *
      * @return array
      */
-    private function get_role_capabilities()
+    private function orerp_get_role_capabilities()
     {
-        $full = array_keys(self::get_capabilities());
+        $full = array_keys(self::orerp_get_capabilities());
 
         return [
             'administrator'           => $full,
@@ -149,7 +149,7 @@ class Obydullah_ERP_Roles
         ];
     }
 
-    public function get_employees_with_roles()
+    public function orerp_get_employees_with_roles()
     {
         global $wpdb;
 
@@ -165,7 +165,7 @@ class Obydullah_ERP_Roles
         ) ?: [];
 
         foreach ($users as &$employee) {
-            $employee->wp_role = '';
+            $employee->wp_role = 'orerp_';
             if ($employee->user_id) {
                 $user = get_userdata($employee->user_id);
                 if ($user) {
@@ -183,7 +183,7 @@ class Obydullah_ERP_Roles
         return $users;
     }
 
-    public function assign_role($user_id, $role_key)
+    public function orerp_assign_role($user_id, $role_key)
     {
         $user_id = intval($user_id);
 
@@ -217,7 +217,7 @@ class Obydullah_ERP_Roles
 
     // --- AJAX ---
 
-    public function ajax_get_employee_roles()
+    public function orerp_ajax_get_employee_roles()
     {
         check_ajax_referer('orerp_roles', 'nonce');
 
@@ -225,10 +225,10 @@ class Obydullah_ERP_Roles
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        wp_send_json_success($this->get_employees_with_roles());
+        wp_send_json_success($this->orerp_get_employees_with_roles());
     }
 
-    public function ajax_assign_employee_role()
+    public function orerp_ajax_assign_employee_role()
     {
         check_ajax_referer('orerp_roles', 'nonce');
 
@@ -237,9 +237,9 @@ class Obydullah_ERP_Roles
         }
 
         $user_id = intval($_POST['user_id'] ?? 0);
-        $role_key = sanitize_text_field(wp_unslash($_POST['role'] ?? ''));
+        $role_key = sanitize_text_field(wp_unslash($_POST['role'] ?? 'orerp_'));
 
-        $result = $this->assign_role($user_id, $role_key);
+        $result = $this->orerp_assign_role($user_id, $role_key);
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());

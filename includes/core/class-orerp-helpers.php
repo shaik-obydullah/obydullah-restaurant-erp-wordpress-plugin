@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 
 class Obydullah_ERP_Helpers
 {
-    public static function get_settings()
+    public static function orerp_get_settings()
     {
         return [
             'currency'          => get_option('orerp_currency', '$'),
@@ -22,9 +22,9 @@ class Obydullah_ERP_Helpers
         ];
     }
 
-    public static function format_currency($amount)
+    public static function orerp_format_currency($amount)
     {
-        $settings = self::get_settings();
+        $settings = self::orerp_get_settings();
         $currency = $settings['currency'];
         $position = $settings['currency_position'];
         $amount_formatted = number_format(floatval($amount), 2);
@@ -42,13 +42,13 @@ class Obydullah_ERP_Helpers
         }
     }
 
-    public static function format_date($date_string)
+    public static function orerp_format_date($date_string)
     {
         if (empty($date_string)) {
-            return '';
+            return 'orerp_';
         }
 
-        $settings = self::get_settings();
+        $settings = self::orerp_get_settings();
         $date_format = $settings['date_format'];
         $timestamp = strtotime($date_string);
 
@@ -59,25 +59,25 @@ class Obydullah_ERP_Helpers
         return gmdate($date_format, $timestamp);
     }
 
-    public static function get_currency_symbol()
+    public static function orerp_get_currency_symbol()
     {
         if (function_exists('get_woocommerce_currency_symbol') && function_exists('get_woocommerce_currency')) {
             return get_woocommerce_currency_symbol(get_woocommerce_currency());
         }
-        return self::get_settings()['currency'];
+        return self::orerp_get_settings()['currency'];
     }
 
-    public static function get_current_branch_id()
+    public static function orerp_get_current_branch_id()
     {
         return intval(get_option('orerp_current_branch', 0));
     }
 
-    public static function set_current_branch_id($branch_id)
+    public static function orerp_set_current_branch_id($branch_id)
     {
         update_option('orerp_current_branch', intval($branch_id));
     }
 
-    public static function generate_po_number()
+    public static function orerp_generate_po_number()
     {
         global $wpdb;
         $table = $wpdb->prefix . 'erp_purchase_orders';
@@ -100,7 +100,7 @@ class Obydullah_ERP_Helpers
         return $prefix . str_pad($new_num, 4, '0', STR_PAD_LEFT);
     }
 
-    public static function generate_entry_number()
+    public static function orerp_generate_entry_number()
     {
         global $wpdb;
         $table = $wpdb->prefix . 'erp_journal_entries';
@@ -123,7 +123,7 @@ class Obydullah_ERP_Helpers
         return $prefix . str_pad($new_num, 4, '0', STR_PAD_LEFT);
     }
 
-    public static function generate_employee_code()
+    public static function orerp_generate_employee_code()
     {
         global $wpdb;
         $table = $wpdb->prefix . 'erp_employees';
@@ -146,7 +146,7 @@ class Obydullah_ERP_Helpers
         return $prefix . str_pad($new_num, 4, '0', STR_PAD_LEFT);
     }
 
-    public static function generate_supplier_code()
+    public static function orerp_generate_supplier_code()
     {
         global $wpdb;
         $table = $wpdb->prefix . 'erp_suppliers';
@@ -169,7 +169,7 @@ class Obydullah_ERP_Helpers
         return $prefix . str_pad($new_num, 4, '0', STR_PAD_LEFT);
     }
 
-    public static function get_account_id_by_code($code)
+    public static function orerp_get_account_id_by_code($code)
     {
         global $wpdb;
         $table = $wpdb->prefix . 'erp_accounts';
@@ -180,12 +180,12 @@ class Obydullah_ERP_Helpers
         )));
     }
 
-    public static function sanitize_price($price)
+    public static function orerp_sanitize_price($price)
     {
-        return floatval(preg_replace('/[^0-9.\-]/', '', $price));
+        return floatval(preg_replace('/[^0-9.\-]/', 'orerp_', $price));
     }
 
-    public static function is_valid_date($date, $format = 'Y-m-d')
+    public static function orerp_is_valid_date($date, $format = 'Y-m-d')
     {
         $d = DateTime::createFromFormat($format, $date);
         return $d && $d->format($format) === $date;
@@ -198,7 +198,7 @@ class Obydullah_ERP_Helpers
      * @param string $cap Capability name (defaults to full admin).
      * @return bool
      */
-    public static function can($cap = 'orerp_admin')
+    public static function orerp_can($cap = 'orerp_admin')
     {
         if (current_user_can('manage_options')) {
             return true;
@@ -212,7 +212,7 @@ class Obydullah_ERP_Helpers
      *
      * @return void
      */
-    public static function render_settings_page()
+    public static function orerp_render_settings_page()
     {
         if (isset($_POST['orerp_save_settings']) && check_admin_referer('orerp_save_settings', 'orerp_settings_nonce')) {
             $currency          = sanitize_text_field(wp_unslash($_POST['currency'] ?? '$'));
@@ -228,7 +228,7 @@ class Obydullah_ERP_Helpers
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Settings saved.', 'obydullah-restaurant-erp') . '</p></div>';
         }
 
-        $settings = self::get_settings();
+        $settings = self::orerp_get_settings();
         $tax_rate = floatval(get_option('orerp_tax_rate', 0));
         ?>
         <div class="wrap">

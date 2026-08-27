@@ -18,19 +18,19 @@ class Obydullah_ERP_Reports
 {
     public function __construct()
     {
-        add_action('wp_ajax_orerp_get_sales_report', [$this, 'ajax_get_sales_report']);
-        add_action('wp_ajax_orerp_get_inventory_report', [$this, 'ajax_get_inventory_report']);
-        add_action('wp_ajax_orerp_get_financial_report', [$this, 'ajax_get_financial_report']);
-        add_action('wp_ajax_orerp_get_branch_comparison', [$this, 'ajax_get_branch_comparison']);
-        add_action('wp_ajax_orerp_get_employee_performance', [$this, 'ajax_get_employee_performance']);
+        add_action('wp_ajax_orerp_get_sales_report', [$this, 'orerp_ajax_get_sales_report']);
+        add_action('wp_ajax_orerp_get_inventory_report', [$this, 'orerp_ajax_get_inventory_report']);
+        add_action('wp_ajax_orerp_get_financial_report', [$this, 'orerp_ajax_get_financial_report']);
+        add_action('wp_ajax_orerp_get_branch_comparison', [$this, 'orerp_ajax_get_branch_comparison']);
+        add_action('wp_ajax_orerp_get_employee_performance', [$this, 'orerp_ajax_get_employee_performance']);
     }
 
-    public function render_page()
+    public function orerp_render_page()
     {
         $tab = isset($_GET['tab']) ? sanitize_text_field(wp_unslash($_GET['tab'])) : 'sales';
 
         if (isset($_GET['print']) && $_GET['print'] === '1') {
-            $this->render_print_view($tab);
+            $this->orerp_render_print_view($tab);
             return;
         }
         ?>
@@ -42,23 +42,23 @@ class Obydullah_ERP_Reports
             <hr class="wp-header-end">
 
             <div class="orerp-tabs">
-                <a class="tab <?php echo $tab === 'sales' ? 'active' : ''; ?>"
+                <a class="tab <?php echo $tab === 'sales' ? 'active' : 'orerp_'; ?>"
                    href="<?php echo esc_url(admin_url('admin.php?page=orerp-reports&tab=sales')); ?>">
                     <?php esc_html_e('Sales', 'obydullah-restaurant-erp'); ?>
                 </a>
-                <a class="tab <?php echo $tab === 'inventory' ? 'active' : ''; ?>"
+                <a class="tab <?php echo $tab === 'inventory' ? 'active' : 'orerp_'; ?>"
                    href="<?php echo esc_url(admin_url('admin.php?page=orerp-reports&tab=inventory')); ?>">
                     <?php esc_html_e('Inventory', 'obydullah-restaurant-erp'); ?>
                 </a>
-                <a class="tab <?php echo $tab === 'financial' ? 'active' : ''; ?>"
+                <a class="tab <?php echo $tab === 'financial' ? 'active' : 'orerp_'; ?>"
                    href="<?php echo esc_url(admin_url('admin.php?page=orerp-reports&tab=financial')); ?>">
                     <?php esc_html_e('Financial', 'obydullah-restaurant-erp'); ?>
                 </a>
-                <a class="tab <?php echo $tab === 'branches' ? 'active' : ''; ?>"
+                <a class="tab <?php echo $tab === 'branches' ? 'active' : 'orerp_'; ?>"
                    href="<?php echo esc_url(admin_url('admin.php?page=orerp-reports&tab=branches')); ?>">
                     <?php esc_html_e('Branch Comparison', 'obydullah-restaurant-erp'); ?>
                 </a>
-                <a class="tab <?php echo $tab === 'employees' ? 'active' : ''; ?>"
+                <a class="tab <?php echo $tab === 'employees' ? 'active' : 'orerp_'; ?>"
                    href="<?php echo esc_url(admin_url('admin.php?page=orerp-reports&tab=employees')); ?>">
                     <?php esc_html_e('Employee Performance', 'obydullah-restaurant-erp'); ?>
                 </a>
@@ -80,7 +80,7 @@ class Obydullah_ERP_Reports
                         <label><?php esc_html_e('Branch', 'obydullah-restaurant-erp'); ?></label>
                         <select id="report-branch-filter">
                             <option value=""><?php esc_html_e('All Branches', 'obydullah-restaurant-erp'); ?></option>
-                            <?php $this->render_branch_options(0); ?>
+                            <?php $this->orerp_render_branch_options(0); ?>
                         </select>
                     </div>
                     <div class="filter-actions">
@@ -99,7 +99,7 @@ class Obydullah_ERP_Reports
         <?php
     }
 
-    private function render_branch_options($selected = 0)
+    private function orerp_render_branch_options($selected = 0)
     {
         global $wpdb;
         $branches = $wpdb->get_results($wpdb->prepare("SELECT id, name FROM {$wpdb->prefix}erp_branches WHERE is_active = 1 AND 1 = %d ORDER BY name", 1));
@@ -120,17 +120,17 @@ class Obydullah_ERP_Reports
      * @param string $tab Report tab.
      * @return void
      */
-    private function render_print_view($tab)
+    private function orerp_render_print_view($tab)
     {
         $template_map = [
-            'sales'     => 'sales.php',
-            'inventory' => 'inventory.php',
-            'financial' => 'financial.php',
-            'branches'  => 'branches.php',
-            'employees' => 'employees.php',
+            'sales'     => 'orerp-sales.php',
+            'inventory' => 'orerp-inventory.php',
+            'financial' => 'orerp-financial.php',
+            'branches'  => 'orerp-branches.php',
+            'employees' => 'orerp-employees.php',
         ];
 
-        $template = $template_map[$tab] ?? 'sales.php';
+        $template = $template_map[$tab] ?? 'orerp-sales.php';
         $path = ORERP_PATH . 'templates/reports/' . $template;
 
         if (!file_exists($path)) {
@@ -139,20 +139,20 @@ class Obydullah_ERP_Reports
 
         switch ($tab) {
             case 'inventory':
-                $data = $this->get_inventory_report();
+                $data = $this->orerp_get_inventory_report();
                 break;
             case 'financial':
-                $data = $this->get_financial_report();
+                $data = $this->orerp_get_financial_report();
                 break;
             case 'branches':
-                $data = $this->get_branch_comparison();
+                $data = $this->orerp_get_branch_comparison();
                 break;
             case 'employees':
-                $data = $this->get_employee_performance();
+                $data = $this->orerp_get_employee_performance();
                 break;
             case 'sales':
             default:
-                $data = $this->get_sales_report();
+                $data = $this->orerp_get_sales_report();
                 break;
         }
 
@@ -160,34 +160,34 @@ class Obydullah_ERP_Reports
         exit;
     }
 
-    private function get_date_range()
+    private function orerp_get_date_range()
     {
-        $from = sanitize_text_field(wp_unslash($_GET['date_from'] ?? ''));
-        $to   = sanitize_text_field(wp_unslash($_GET['date_to'] ?? ''));
+        $from = sanitize_text_field(wp_unslash($_GET['date_from'] ?? 'orerp_'));
+        $to   = sanitize_text_field(wp_unslash($_GET['date_to'] ?? 'orerp_'));
         return [$from, $to];
     }
 
-    private function get_branch_filter()
+    private function orerp_get_branch_filter()
     {
         return intval($_GET['branch_id'] ?? 0);
     }
 
-    public function get_sales_report()
+    public function orerp_get_sales_report()
     {
-        list($from, $to) = $this->get_date_range();
+        list($from, $to) = $this->orerp_get_date_range();
         $sales = new Obydullah_ERP_Sales_Reports();
-        return $sales->get_sales_report($from, $to, $this->get_branch_filter());
+        return $sales->get_sales_report($from, $to, $this->orerp_get_branch_filter());
     }
 
-    public function get_inventory_report()
+    public function orerp_get_inventory_report()
     {
         $inventory = new Obydullah_ERP_Inventory_Reports();
-        return $inventory->get_inventory_report($this->get_branch_filter());
+        return $inventory->get_inventory_report($this->orerp_get_branch_filter());
     }
 
-    public function get_financial_report()
+    public function orerp_get_financial_report()
     {
-        list($from, $to) = $this->get_date_range();
+        list($from, $to) = $this->orerp_get_date_range();
 
         $financial = new Obydullah_ERP_Financial_Reports();
         $accounts = $financial->get_account_breakdown($from, $to);
@@ -228,8 +228,8 @@ class Obydullah_ERP_Reports
             $total_expenses += floatval($e['total_debit']) - floatval($e['total_credit']);
         }
 
-        $period_from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : gmdate('Y-m-01');
-        $period_to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
+        $period_from = Obydullah_ERP_Helpers::orerp_is_valid_date($from) ? $from : gmdate('Y-m-01');
+        $period_to   = Obydullah_ERP_Helpers::orerp_is_valid_date($to) ? $to : gmdate('Y-m-d');
 
         return [
             'period'         => ['from' => $period_from, 'to' => $period_to],
@@ -244,19 +244,19 @@ class Obydullah_ERP_Reports
         ];
     }
 
-    public function get_branch_comparison()
+    public function orerp_get_branch_comparison()
     {
-        list($from, $to) = $this->get_date_range();
+        list($from, $to) = $this->orerp_get_date_range();
         $branches = new Obydullah_ERP_Branch_Reports();
         return $branches->get_branch_comparison($from, $to);
     }
 
-    public function get_employee_performance()
+    public function orerp_get_employee_performance()
     {
         global $wpdb;
 
-        list($from, $to) = $this->get_date_range();
-        $branch_id = $this->get_branch_filter();
+        list($from, $to) = $this->orerp_get_date_range();
+        $branch_id = $this->orerp_get_branch_filter();
 
         if ($branch_id > 0) {
             $employees = $wpdb->get_results($wpdb->prepare(
@@ -321,7 +321,7 @@ class Obydullah_ERP_Reports
 
     // --- AJAX ---
 
-    private function guard_report_access()
+    private function orerp_guard_report_access()
     {
         check_ajax_referer('orerp_reports', 'nonce');
         if (!Obydullah_ERP_Helpers::can('orerp_reports')) {
@@ -329,33 +329,33 @@ class Obydullah_ERP_Reports
         }
     }
 
-    public function ajax_get_sales_report()
+    public function orerp_ajax_get_sales_report()
     {
-        $this->guard_report_access();
-        wp_send_json_success($this->get_sales_report());
+        $this->orerp_guard_report_access();
+        wp_send_json_success($this->orerp_get_sales_report());
     }
 
-    public function ajax_get_inventory_report()
+    public function orerp_ajax_get_inventory_report()
     {
-        $this->guard_report_access();
-        wp_send_json_success($this->get_inventory_report());
+        $this->orerp_guard_report_access();
+        wp_send_json_success($this->orerp_get_inventory_report());
     }
 
-    public function ajax_get_financial_report()
+    public function orerp_ajax_get_financial_report()
     {
-        $this->guard_report_access();
-        wp_send_json_success($this->get_financial_report());
+        $this->orerp_guard_report_access();
+        wp_send_json_success($this->orerp_get_financial_report());
     }
 
-    public function ajax_get_branch_comparison()
+    public function orerp_ajax_get_branch_comparison()
     {
-        $this->guard_report_access();
-        wp_send_json_success($this->get_branch_comparison());
+        $this->orerp_guard_report_access();
+        wp_send_json_success($this->orerp_get_branch_comparison());
     }
 
-    public function ajax_get_employee_performance()
+    public function orerp_ajax_get_employee_performance()
     {
-        $this->guard_report_access();
-        wp_send_json_success($this->get_employee_performance());
+        $this->orerp_guard_report_access();
+        wp_send_json_success($this->orerp_get_employee_performance());
     }
 }

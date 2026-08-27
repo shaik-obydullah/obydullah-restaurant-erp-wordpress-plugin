@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 $orerp_report_title = __('Employee Performance Report', 'obydullah-restaurant-erp');
-include ORERP_PATH . 'templates/reports/header.php';
+include ORERP_PATH . 'templates/reports/orerp-header.php';
 ?>
 
 <?php if (!empty($data['employees'])): ?>
@@ -41,4 +41,4 @@ include ORERP_PATH . 'templates/reports/header.php';
     <p><?php esc_html_e('No employee data available.', 'obydullah-restaurant-erp'); ?></p>
 <?php endif; ?>
 
-<?php include ORERP_PATH . 'templates/reports/footer.php'; ?>
+<?php include ORERP_PATH . 'templates/reports/orerp-footer.php'; ?>

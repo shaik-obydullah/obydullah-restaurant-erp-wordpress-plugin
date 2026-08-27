@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 
 class Obydullah_ERP_Inventory_Reports
 {
-    public function get_inventory_report($branch_id = 0)
+    public function orerp_get_inventory_report($branch_id = 0)
     {
         global $wpdb;
 

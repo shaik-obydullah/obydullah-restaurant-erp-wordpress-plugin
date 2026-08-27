@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 $orerp_report_title = __('Branch Comparison Report', 'obydullah-restaurant-erp');
-include ORERP_PATH . 'templates/reports/header.php';
+include ORERP_PATH . 'templates/reports/orerp-header.php';
 ?>
 
 <?php if (!empty($data['branches'])): ?>
@@ -38,7 +38,7 @@ include ORERP_PATH . 'templates/reports/header.php';
             <td><strong><?php echo esc_html($orerp_b['branch_name']); ?></strong></td>
             <td class="text-right"><?php echo esc_html($orerp_b['employees']); ?></td>
             <td class="text-right"><?php echo esc_html($orerp_b['po_count']); ?></td>
-            <td class="text-right"><?php echo esc_html(Obydullah_ERP_Helpers::format_currency($orerp_b['po_total'])); ?></td>
+            <td class="text-right"><?php echo esc_html(Obydullah_ERP_Helpers::orerp_format_currency($orerp_b['po_total'])); ?></td>
             <td class="text-right"><?php echo esc_html($orerp_b['kitchen_orders']); ?></td>
             <td class="text-right"><?php echo esc_html($orerp_b['stock_items']); ?></td>
         </tr>
@@ -47,7 +47,7 @@ include ORERP_PATH . 'templates/reports/header.php';
         <td><?php esc_html_e('Total', 'obydullah-restaurant-erp'); ?></td>
         <td class="text-right"><?php echo esc_html($totals['employees']); ?></td>
         <td class="text-right"><?php echo esc_html($totals['po_count']); ?></td>
-        <td class="text-right"><?php echo esc_html(Obydullah_ERP_Helpers::format_currency($totals['po_total'])); ?></td>
+        <td class="text-right"><?php echo esc_html(Obydullah_ERP_Helpers::orerp_format_currency($totals['po_total'])); ?></td>
         <td class="text-right"><?php echo esc_html($totals['kitchen_orders']); ?></td>
         <td class="text-right"><?php echo esc_html($totals['stock_items']); ?></td>
     </tr>
@@ -57,4 +57,4 @@ include ORERP_PATH . 'templates/reports/header.php';
     <p><?php esc_html_e('No branch data available.', 'obydullah-restaurant-erp'); ?></p>
 <?php endif; ?>
 
-<?php include ORERP_PATH . 'templates/reports/footer.php'; ?>
+<?php include ORERP_PATH . 'templates/reports/orerp-footer.php'; ?>

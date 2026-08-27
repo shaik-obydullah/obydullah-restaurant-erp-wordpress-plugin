@@ -15,12 +15,12 @@ if (!defined('ABSPATH')) {
 
 class Obydullah_ERP_Branch_Reports
 {
-    public function get_branch_comparison($from = '', $to = '')
+    public function orerp_get_branch_comparison($from = 'orerp_', $to = 'orerp_')
     {
         global $wpdb;
 
-        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : gmdate('Y-m-01');
-        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
+        $from = Obydullah_ERP_Helpers::orerp_is_valid_date($from) ? $from : gmdate('Y-m-01');
+        $to   = Obydullah_ERP_Helpers::orerp_is_valid_date($to) ? $to : gmdate('Y-m-d');
 
         $branches = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}erp_branches WHERE is_active = 1 ORDER BY name");
         $comparison = [];

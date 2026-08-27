@@ -11,11 +11,11 @@ if (!defined('ABSPATH')) {
 }
 
 $orerp_report_title = __('Inventory Report', 'obydullah-restaurant-erp');
-include ORERP_PATH . 'templates/reports/header.php';
+include ORERP_PATH . 'templates/reports/orerp-header.php';
 ?>
 <div class="summary-grid">
     <div class="summary-card"><div class="label"><?php esc_html_e('Total Items', 'obydullah-restaurant-erp'); ?></div><div class="value"><?php echo esc_html($data['total_items']); ?></div></div>
-    <div class="summary-card"><div class="label"><?php esc_html_e('Total Value', 'obydullah-restaurant-erp'); ?></div><div class="value"><?php echo esc_html(Obydullah_ERP_Helpers::format_currency($data['total_value'])); ?></div></div>
+    <div class="summary-card"><div class="label"><?php esc_html_e('Total Value', 'obydullah-restaurant-erp'); ?></div><div class="value"><?php echo esc_html(Obydullah_ERP_Helpers::orerp_format_currency($data['total_value'])); ?></div></div>
     <div class="summary-card"><div class="label"><?php esc_html_e('Low Stock', 'obydullah-restaurant-erp'); ?></div><div class="value"><?php echo esc_html(count($data['low_stock'])); ?></div></div>
     <div class="summary-card"><div class="label"><?php esc_html_e('Out of Stock', 'obydullah-restaurant-erp'); ?></div><div class="value"><?php echo esc_html(count($data['out_of_stock'])); ?></div></div>
 </div>
@@ -31,11 +31,11 @@ include ORERP_PATH . 'templates/reports/header.php';
             <td><?php echo esc_html($s->branch_name ?: '-'); ?></td>
             <td class="text-right"><?php echo esc_html($s->quantity); ?></td>
             <td class="text-right"><?php echo esc_html($s->min_stock ?? 0); ?></td>
-            <td class="text-right"><?php echo esc_html(Obydullah_ERP_Helpers::format_currency(floatval($s->quantity) * floatval($s->cost_price ?? 0))); ?></td>
+            <td class="text-right"><?php echo esc_html(Obydullah_ERP_Helpers::orerp_format_currency(floatval($s->quantity) * floatval($s->cost_price ?? 0))); ?></td>
         </tr>
     <?php endforeach; ?>
     </tbody>
 </table>
 <?php endif; ?>
 
-<?php include ORERP_PATH . 'templates/reports/footer.php'; ?>
+<?php include ORERP_PATH . 'templates/reports/orerp-footer.php'; ?>

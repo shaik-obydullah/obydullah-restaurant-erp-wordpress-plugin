@@ -21,14 +21,14 @@ class Obydullah_ERP_Kitchen_Display
         $this->table_orders = $wpdb->prefix . 'erp_kitchen_orders';
         $this->table_prep   = $wpdb->prefix . 'erp_prep_tracking';
 
-        add_action('wp_ajax_orerp_get_kitchen_orders', [$this, 'ajax_get_orders']);
-        add_action('wp_ajax_orerp_update_order_status', [$this, 'ajax_update_status']);
-        add_action('wp_ajax_orerp_create_kitchen_order', [$this, 'ajax_create_order']);
-        add_action('wp_ajax_orerp_add_prep_tracking', [$this, 'ajax_add_prep']);
-        add_action('wp_ajax_orerp_complete_prep', [$this, 'ajax_complete_prep']);
-        add_action('wp_ajax_orerp_get_kitchen_stats', [$this, 'ajax_get_stats']);
+        add_action('wp_ajax_orerp_get_kitchen_orders', [$this, 'orerp_ajax_get_orders']);
+        add_action('wp_ajax_orerp_update_order_status', [$this, 'orerp_ajax_update_status']);
+        add_action('wp_ajax_orerp_create_kitchen_order', [$this, 'orerp_ajax_create_order']);
+        add_action('wp_ajax_orerp_add_prep_tracking', [$this, 'orerp_ajax_add_prep']);
+        add_action('wp_ajax_orerp_complete_prep', [$this, 'orerp_ajax_complete_prep']);
+        add_action('wp_ajax_orerp_get_kitchen_stats', [$this, 'orerp_ajax_get_stats']);
 
-        add_shortcode('orerp_kds', [$this, 'render_kds_shortcode']);
+        add_shortcode('orerp_kds', [$this, 'orerp_render_kds_shortcode']);
     }
 
     /**
@@ -36,15 +36,15 @@ class Obydullah_ERP_Kitchen_Display
      *
      * @return string
      */
-    public function render_kds_shortcode()
+    public function orerp_render_kds_shortcode()
     {
         if (!Obydullah_ERP_Helpers::can('orerp_kitchen')) {
             return '<p>' . esc_html__('You do not have permission to view the kitchen display.', 'obydullah-restaurant-erp') . '</p>';
         }
 
-        $template = ORERP_PATH . 'templates/kds-display.php';
+        $template = ORERP_PATH . 'templates/orerp-kds-display.php';
         if (!file_exists($template)) {
-            return '';
+            return 'orerp_';
         }
 
         ob_start();
@@ -52,18 +52,18 @@ class Obydullah_ERP_Kitchen_Display
         return ob_get_clean();
     }
 
-    public function render_page()
+    public function orerp_render_page()
     {
         $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list';
 
         if ($action === 'add') {
-            $this->render_form('add');
+            $this->orerp_render_form('add');
         } else {
-            $this->render_kds();
+            $this->orerp_render_kds();
         }
     }
 
-    private function render_kds()
+    private function orerp_render_kds()
     {
         $branch_id = isset($_GET['branch_id']) ? intval($_GET['branch_id']) : 0;
         ?>
@@ -79,7 +79,7 @@ class Obydullah_ERP_Kitchen_Display
                     <label><?php esc_html_e('Branch', 'obydullah-restaurant-erp'); ?></label>
                     <select id="kitchen-branch-filter">
                         <option value=""><?php esc_html_e('All Branches', 'obydullah-restaurant-erp'); ?></option>
-                        <?php $this->render_branch_options($branch_id); ?>
+                        <?php $this->orerp_render_branch_options($branch_id); ?>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -135,7 +135,7 @@ class Obydullah_ERP_Kitchen_Display
         <?php
     }
 
-    private function render_form($mode)
+    private function orerp_render_form($mode)
     {
         ?>
         <div class="wrap">
@@ -158,7 +158,7 @@ class Obydullah_ERP_Kitchen_Display
                         <div class="form-group">
                             <label><?php esc_html_e('Branch', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
                             <select name="branch_id" class="regular-text" required>
-                                <?php $this->render_branch_options(0); ?>
+                                <?php $this->orerp_render_branch_options(0); ?>
                             </select>
                         </div>
                     </div>
@@ -208,7 +208,7 @@ class Obydullah_ERP_Kitchen_Display
         <?php
     }
 
-    private function render_branch_options($selected = 0)
+    private function orerp_render_branch_options($selected = 0)
     {
         global $wpdb;
         $table = $wpdb->prefix . 'erp_branches';
@@ -224,17 +224,17 @@ class Obydullah_ERP_Kitchen_Display
         }
     }
 
-    public function get_orders($args = [])
+    public function orerp_get_orders($args = [])
     {
         global $wpdb;
 
         $defaults = [
             'per_page'  => 50,
             'page'      => 1,
-            'status'    => '',
+            'status'    => 'orerp_',
             'branch_id' => 0,
-            'station'   => '',
-            'date'      => '',
+            'station'   => 'orerp_',
+            'date'      => 'orerp_',
         ];
         $args = wp_parse_args($args, $defaults);
 
@@ -275,8 +275,8 @@ class Obydullah_ERP_Kitchen_Display
         )) ?: [];
 
         foreach ($orders as &$order) {
-            $order->formatted_time = Obydullah_ERP_Helpers::format_date($order->created_at);
-            $order->elapsed = $this->get_elapsed_time($order->started_at ?: $order->created_at);
+            $order->formatted_time = Obydullah_ERP_Helpers::orerp_format_date($order->created_at);
+            $order->elapsed = $this->orerp_get_elapsed_time($order->started_at ?: $order->created_at);
         }
 
         return [
@@ -287,7 +287,7 @@ class Obydullah_ERP_Kitchen_Display
         ];
     }
 
-    public function get_stats($branch_id = 0)
+    public function orerp_get_stats($branch_id = 0)
     {
         global $wpdb;
 
@@ -329,16 +329,16 @@ class Obydullah_ERP_Kitchen_Display
         return compact('pending', 'preparing', 'ready', 'completed_today');
     }
 
-    public function create_order($data)
+    public function orerp_create_order($data)
     {
         global $wpdb;
 
         $order_id    = intval($data['order_id'] ?? 0);
         $branch_id   = intval($data['branch_id'] ?? 0);
-        $station     = sanitize_text_field($data['station'] ?? '');
+        $station     = sanitize_text_field($data['station'] ?? 'orerp_');
         $priority    = intval($data['priority'] ?? 0);
         $est_time    = intval($data['estimated_time'] ?? 15);
-        $notes       = sanitize_textarea_field($data['notes'] ?? '');
+        $notes       = sanitize_textarea_field($data['notes'] ?? 'orerp_');
 
         if ($order_id <= 0 || $branch_id <= 0) {
             return new WP_Error('missing_fields', __('Order ID and Branch are required.', 'obydullah-restaurant-erp'));
@@ -358,7 +358,7 @@ class Obydullah_ERP_Kitchen_Display
         return $result !== false ? $wpdb->insert_id : new WP_Error('create_failed', __('Failed to create kitchen order.', 'obydullah-restaurant-erp'));
     }
 
-    public function update_status($order_id, $new_status)
+    public function orerp_update_status($order_id, $new_status)
     {
         global $wpdb;
 
@@ -386,14 +386,14 @@ class Obydullah_ERP_Kitchen_Display
         return true;
     }
 
-    public function add_prep_tracking($data)
+    public function orerp_add_prep_tracking($data)
     {
         global $wpdb;
 
         $kitchen_order_id = intval($data['kitchen_order_id'] ?? 0);
         $recipe_id        = intval($data['recipe_id'] ?? 0) ?: null;
         $employee_id      = intval($data['employee_id'] ?? 0) ?: null;
-        $notes            = sanitize_textarea_field($data['notes'] ?? '');
+        $notes            = sanitize_textarea_field($data['notes'] ?? 'orerp_');
 
         if ($kitchen_order_id <= 0) {
             return new WP_Error('missing_fields', __('Kitchen order ID is required.', 'obydullah-restaurant-erp'));
@@ -411,7 +411,7 @@ class Obydullah_ERP_Kitchen_Display
         return $result !== false ? $wpdb->insert_id : new WP_Error('save_failed', __('Failed to add prep tracking.', 'obydullah-restaurant-erp'));
     }
 
-    public function complete_prep($prep_id)
+    public function orerp_complete_prep($prep_id)
     {
         global $wpdb;
 
@@ -432,12 +432,12 @@ class Obydullah_ERP_Kitchen_Display
         return ['actual_time_minutes' => $actual_minutes];
     }
 
-    public function get_prep_by_order($kitchen_order_id)
+    public function orerp_get_prep_by_order($kitchen_order_id)
     {
         global $wpdb;
 
         return $wpdb->get_results($wpdb->prepare(
-            "SELECT pt.*, r.name AS recipe_name, COALESCE(NULLIF(e.employee_code, ''), u.display_name) AS employee_name
+            "SELECT pt.*, r.name AS recipe_name, COALESCE(NULLIF(e.employee_code, 'orerp_'), u.display_name) AS employee_name
             FROM {$this->table_prep} pt
             LEFT JOIN {$wpdb->prefix}erp_recipes r ON pt.recipe_id = r.id
             LEFT JOIN {$wpdb->prefix}erp_employees e ON pt.employee_id = e.id
@@ -448,7 +448,7 @@ class Obydullah_ERP_Kitchen_Display
         )) ?: [];
     }
 
-    private function get_elapsed_time($from)
+    private function orerp_get_elapsed_time($from)
     {
         $diff = time() - strtotime($from);
         if ($diff < 60) return $diff . 's';
@@ -458,7 +458,7 @@ class Obydullah_ERP_Kitchen_Display
 
     // --- AJAX ---
 
-    public function ajax_get_orders()
+    public function orerp_ajax_get_orders()
     {
         check_ajax_referer('orerp_kitchen', 'nonce');
         if (!current_user_can('manage_options')) {
@@ -468,16 +468,16 @@ class Obydullah_ERP_Kitchen_Display
         $args = [
             'page'      => intval($_GET['page'] ?? 1),
             'per_page'  => 50,
-            'status'    => sanitize_text_field($_GET['status'] ?? ''),
+            'status'    => sanitize_text_field($_GET['status'] ?? 'orerp_'),
             'branch_id' => intval($_GET['branch_id'] ?? 0),
-            'station'   => sanitize_text_field($_GET['station'] ?? ''),
-            'date'      => sanitize_text_field($_GET['date'] ?? ''),
+            'station'   => sanitize_text_field($_GET['station'] ?? 'orerp_'),
+            'date'      => sanitize_text_field($_GET['date'] ?? 'orerp_'),
         ];
 
-        wp_send_json_success($this->get_orders($args));
+        wp_send_json_success($this->orerp_get_orders($args));
     }
 
-    public function ajax_update_status()
+    public function orerp_ajax_update_status()
     {
         check_ajax_referer('orerp_kitchen', 'nonce');
         if (!current_user_can('manage_options')) {
@@ -485,9 +485,9 @@ class Obydullah_ERP_Kitchen_Display
         }
 
         $order_id = intval($_POST['order_id'] ?? 0);
-        $status   = sanitize_text_field($_POST['status'] ?? '');
+        $status   = sanitize_text_field($_POST['status'] ?? 'orerp_');
 
-        $result = $this->update_status($order_id, $status);
+        $result = $this->orerp_update_status($order_id, $status);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }
@@ -495,14 +495,14 @@ class Obydullah_ERP_Kitchen_Display
         wp_send_json_success(['message' => __('Order status updated.', 'obydullah-restaurant-erp')]);
     }
 
-    public function ajax_create_order()
+    public function orerp_ajax_create_order()
     {
         check_ajax_referer('orerp_kitchen', 'nonce');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->create_order($_POST);
+        $result = $this->orerp_create_order($_POST);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }
@@ -510,14 +510,14 @@ class Obydullah_ERP_Kitchen_Display
         wp_send_json_success(['id' => $result, 'message' => __('Kitchen order created.', 'obydullah-restaurant-erp')]);
     }
 
-    public function ajax_add_prep()
+    public function orerp_ajax_add_prep()
     {
         check_ajax_referer('orerp_kitchen', 'nonce');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->add_prep_tracking($_POST);
+        $result = $this->orerp_add_prep_tracking($_POST);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }
@@ -525,7 +525,7 @@ class Obydullah_ERP_Kitchen_Display
         wp_send_json_success(['id' => $result, 'message' => __('Prep tracking started.', 'obydullah-restaurant-erp')]);
     }
 
-    public function ajax_complete_prep()
+    public function orerp_ajax_complete_prep()
     {
         check_ajax_referer('orerp_kitchen', 'nonce');
         if (!current_user_can('manage_options')) {
@@ -533,7 +533,7 @@ class Obydullah_ERP_Kitchen_Display
         }
 
         $prep_id = intval($_POST['prep_id'] ?? 0);
-        $result = $this->complete_prep($prep_id);
+        $result = $this->orerp_complete_prep($prep_id);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }
@@ -541,7 +541,7 @@ class Obydullah_ERP_Kitchen_Display
         wp_send_json_success($result + ['message' => __('Prep completed.', 'obydullah-restaurant-erp')]);
     }
 
-    public function ajax_get_stats()
+    public function orerp_ajax_get_stats()
     {
         check_ajax_referer('orerp_kitchen', 'nonce');
         if (!current_user_can('manage_options')) {
@@ -549,6 +549,6 @@ class Obydullah_ERP_Kitchen_Display
         }
 
         $branch_id = intval($_GET['branch_id'] ?? 0);
-        wp_send_json_success($this->get_stats($branch_id));
+        wp_send_json_success($this->orerp_get_stats($branch_id));
     }
 }

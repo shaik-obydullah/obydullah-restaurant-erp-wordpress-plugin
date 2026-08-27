@@ -21,27 +21,27 @@ class Obydullah_ERP_Suppliers
         $this->table = $wpdb->prefix . 'erp_suppliers';
         $this->products_table = $wpdb->prefix . 'erp_supplier_products';
 
-        add_action('wp_ajax_orerp_get_suppliers', [$this, 'ajax_get_suppliers']);
-        add_action('wp_ajax_orerp_save_supplier', [$this, 'ajax_save_supplier']);
-        add_action('wp_ajax_orerp_delete_supplier', [$this, 'ajax_delete_supplier']);
-        add_action('wp_ajax_orerp_get_suppliers_list', [$this, 'ajax_get_suppliers_list']);
-        add_action('wp_ajax_orerp_get_supplier_products', [$this, 'ajax_get_supplier_products']);
-        add_action('wp_ajax_orerp_save_supplier_product', [$this, 'ajax_save_supplier_product']);
-        add_action('wp_ajax_orerp_delete_supplier_product', [$this, 'ajax_delete_supplier_product']);
+        add_action('wp_ajax_orerp_get_suppliers', [$this, 'orerp_ajax_get_suppliers']);
+        add_action('wp_ajax_orerp_save_supplier', [$this, 'orerp_ajax_save_supplier']);
+        add_action('wp_ajax_orerp_delete_supplier', [$this, 'orerp_ajax_delete_supplier']);
+        add_action('wp_ajax_orerp_get_suppliers_list', [$this, 'orerp_ajax_get_suppliers_list']);
+        add_action('wp_ajax_orerp_get_supplier_products', [$this, 'orerp_ajax_get_supplier_products']);
+        add_action('wp_ajax_orerp_save_supplier_product', [$this, 'orerp_ajax_save_supplier_product']);
+        add_action('wp_ajax_orerp_delete_supplier_product', [$this, 'orerp_ajax_delete_supplier_product']);
     }
 
-    public function render_page()
+    public function orerp_render_page()
     {
         $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list';
 
         if ($action === 'add' || $action === 'edit') {
-            $this->render_form($action);
+            $this->orerp_render_form($action);
         } else {
-            $this->render_list();
+            $this->orerp_render_list();
         }
     }
 
-    private function render_list()
+    private function orerp_render_list()
     {
         ?>
         <div class="wrap">
@@ -63,13 +63,13 @@ class Obydullah_ERP_Suppliers
         <?php
     }
 
-    private function render_form($mode)
+    private function orerp_render_form($mode)
     {
         $supplier = null;
         if ($mode === 'edit') {
             $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
             if ($id) {
-                $supplier = $this->get_supplier($id);
+                $supplier = $this->orerp_get_supplier($id);
             }
         }
 
@@ -86,18 +86,18 @@ class Obydullah_ERP_Suppliers
                 <form id="supplier-form" method="post">
                     <input type="hidden" name="action" value="orerp_save_supplier">
                     <?php wp_nonce_field('orerp_save_supplier', 'supplier_nonce'); ?>
-                    <input type="hidden" name="supplier_id" value="<?php echo esc_attr($supplier->id ?? ''); ?>">
+                    <input type="hidden" name="supplier_id" value="<?php echo esc_attr($supplier->id ?? 'orerp_'); ?>">
 
                     <div class="form-row">
                         <div class="form-group">
                             <label><?php esc_html_e('Supplier Name', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
                             <input type="text" name="name" class="regular-text" required
-                                value="<?php echo esc_attr($supplier->name ?? ''); ?>">
+                                value="<?php echo esc_attr($supplier->name ?? 'orerp_'); ?>">
                         </div>
                         <div class="form-group">
                             <label><?php esc_html_e('Supplier Code', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
                             <input type="text" name="code" class="regular-text" required
-                                value="<?php echo esc_attr($supplier->code ?? Obydullah_ERP_Helpers::generate_supplier_code()); ?>">
+                                value="<?php echo esc_attr($supplier->code ?? Obydullah_ERP_Helpers::orerp_generate_supplier_code()); ?>">
                         </div>
                     </div>
 
@@ -105,12 +105,12 @@ class Obydullah_ERP_Suppliers
                         <div class="form-group">
                             <label><?php esc_html_e('Contact Person', 'obydullah-restaurant-erp'); ?></label>
                             <input type="text" name="contact_person" class="regular-text"
-                                value="<?php echo esc_attr($supplier->contact_person ?? ''); ?>">
+                                value="<?php echo esc_attr($supplier->contact_person ?? 'orerp_'); ?>">
                         </div>
                         <div class="form-group">
                             <label><?php esc_html_e('Phone', 'obydullah-restaurant-erp'); ?></label>
                             <input type="tel" name="phone" class="regular-text"
-                                value="<?php echo esc_attr($supplier->phone ?? ''); ?>">
+                                value="<?php echo esc_attr($supplier->phone ?? 'orerp_'); ?>">
                         </div>
                     </div>
 
@@ -118,23 +118,23 @@ class Obydullah_ERP_Suppliers
                         <div class="form-group">
                             <label><?php esc_html_e('Email', 'obydullah-restaurant-erp'); ?></label>
                             <input type="email" name="email" class="regular-text"
-                                value="<?php echo esc_attr($supplier->email ?? ''); ?>">
+                                value="<?php echo esc_attr($supplier->email ?? 'orerp_'); ?>">
                         </div>
                         <div class="form-group">
                             <label><?php esc_html_e('Payment Terms', 'obydullah-restaurant-erp'); ?></label>
                             <select name="payment_terms" class="regular-text">
                                 <option value=""><?php esc_html_e('Select', 'obydullah-restaurant-erp'); ?></option>
-                                <option value="COD" <?php selected($supplier->payment_terms ?? '', 'COD'); ?>><?php esc_html_e('Cash on Delivery', 'obydullah-restaurant-erp'); ?></option>
-                                <option value="Net15" <?php selected($supplier->payment_terms ?? '', 'Net15'); ?>><?php esc_html_e('Net 15 Days', 'obydullah-restaurant-erp'); ?></option>
-                                <option value="Net30" <?php selected($supplier->payment_terms ?? '', 'Net30'); ?>><?php esc_html_e('Net 30 Days', 'obydullah-restaurant-erp'); ?></option>
-                                <option value="Net60" <?php selected($supplier->payment_terms ?? '', 'Net60'); ?>><?php esc_html_e('Net 60 Days', 'obydullah-restaurant-erp'); ?></option>
+                                <option value="COD" <?php selected($supplier->payment_terms ?? 'orerp_', 'COD'); ?>><?php esc_html_e('Cash on Delivery', 'obydullah-restaurant-erp'); ?></option>
+                                <option value="Net15" <?php selected($supplier->payment_terms ?? 'orerp_', 'Net15'); ?>><?php esc_html_e('Net 15 Days', 'obydullah-restaurant-erp'); ?></option>
+                                <option value="Net30" <?php selected($supplier->payment_terms ?? 'orerp_', 'Net30'); ?>><?php esc_html_e('Net 30 Days', 'obydullah-restaurant-erp'); ?></option>
+                                <option value="Net60" <?php selected($supplier->payment_terms ?? 'orerp_', 'Net60'); ?>><?php esc_html_e('Net 60 Days', 'obydullah-restaurant-erp'); ?></option>
                             </select>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label><?php esc_html_e('Address', 'obydullah-restaurant-erp'); ?></label>
-                        <textarea name="address" rows="3" class="large-text"><?php echo esc_textarea($supplier->address ?? ''); ?></textarea>
+                        <textarea name="address" rows="3" class="large-text"><?php echo esc_textarea($supplier->address ?? 'orerp_'); ?></textarea>
                     </div>
 
                     <div class="form-group">
@@ -156,11 +156,11 @@ class Obydullah_ERP_Suppliers
         <?php
     }
 
-    public function get_suppliers($args = [])
+    public function orerp_get_suppliers($args = [])
     {
         global $wpdb;
 
-        $defaults = ['per_page' => 20, 'page' => 1, 'search' => '', 'active' => ''];
+        $defaults = ['per_page' => 20, 'page' => 1, 'search' => 'orerp_', 'active' => 'orerp_'];
         $args = wp_parse_args($args, $defaults);
 
         $where = '1=1';
@@ -173,7 +173,7 @@ class Obydullah_ERP_Suppliers
             $prepare_args[] = '%' . $wpdb->esc_like($args['search']) . '%';
         }
 
-        if ($args['active'] !== '') {
+        if ($args['active'] !== 'orerp_') {
             $where .= ' AND is_active = %d';
             $prepare_args[] = intval($args['active']);
         }
@@ -199,24 +199,24 @@ class Obydullah_ERP_Suppliers
         ];
     }
 
-    public function get_supplier($id)
+    public function orerp_get_supplier($id)
     {
         global $wpdb;
         return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", intval($id)));
     }
 
-    public function save_supplier($data)
+    public function orerp_save_supplier($data)
     {
         global $wpdb;
 
         $id = intval($data['supplier_id'] ?? 0);
-        $name = sanitize_text_field($data['name'] ?? '');
-        $code = sanitize_text_field($data['code'] ?? '');
-        $contact_person = sanitize_text_field($data['contact_person'] ?? '');
-        $email = sanitize_email($data['email'] ?? '');
-        $phone = sanitize_text_field($data['phone'] ?? '');
-        $address = sanitize_textarea_field($data['address'] ?? '');
-        $payment_terms = sanitize_text_field($data['payment_terms'] ?? '');
+        $name = sanitize_text_field($data['name'] ?? 'orerp_');
+        $code = sanitize_text_field($data['code'] ?? 'orerp_');
+        $contact_person = sanitize_text_field($data['contact_person'] ?? 'orerp_');
+        $email = sanitize_email($data['email'] ?? 'orerp_');
+        $phone = sanitize_text_field($data['phone'] ?? 'orerp_');
+        $address = sanitize_textarea_field($data['address'] ?? 'orerp_');
+        $payment_terms = sanitize_text_field($data['payment_terms'] ?? 'orerp_');
         $is_active = isset($data['is_active']) ? 1 : 0;
 
         if (empty($name) || empty($code)) {
@@ -243,7 +243,7 @@ class Obydullah_ERP_Suppliers
         return $result !== false ? $id : new WP_Error('save_failed', __('Failed to save supplier.', 'obydullah-restaurant-erp'));
     }
 
-    public function delete_supplier($id)
+    public function orerp_delete_supplier($id)
     {
         global $wpdb;
         $wpdb->delete($this->table, ['id' => intval($id)]);
@@ -251,7 +251,7 @@ class Obydullah_ERP_Suppliers
         return true;
     }
 
-    public function get_supplier_products($supplier_id)
+    public function orerp_get_supplier_products($supplier_id)
     {
         global $wpdb;
         return $wpdb->get_results($wpdb->prepare(
@@ -264,14 +264,14 @@ class Obydullah_ERP_Suppliers
         )) ?: [];
     }
 
-    public function save_supplier_product($data)
+    public function orerp_save_supplier_product($data)
     {
         global $wpdb;
 
         $id = intval($data['id'] ?? 0);
         $supplier_id = intval($data['supplier_id'] ?? 0);
         $product_id = intval($data['product_id'] ?? 0);
-        $supplier_sku = sanitize_text_field($data['supplier_sku'] ?? '');
+        $supplier_sku = sanitize_text_field($data['supplier_sku'] ?? 'orerp_');
         $unit_cost = floatval($data['unit_cost'] ?? 0);
         $lead_time_days = intval($data['lead_time_days'] ?? 0);
         $min_order_qty = intval($data['min_order_qty'] ?? 1);
@@ -301,36 +301,36 @@ class Obydullah_ERP_Suppliers
         return $result !== false ? $id : new WP_Error('save_failed', __('Failed to save product.', 'obydullah-restaurant-erp'));
     }
 
-    public function delete_supplier_product($id)
+    public function orerp_delete_supplier_product($id)
     {
         global $wpdb;
         return $wpdb->delete($this->products_table, ['id' => intval($id)]) !== false;
     }
 
-    public function ajax_get_suppliers()
+    public function orerp_ajax_get_suppliers()
     {
         check_ajax_referer('orerp_suppliers', 'nonce');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->get_suppliers([
+        $result = $this->orerp_get_suppliers([
             'per_page' => intval($_GET['per_page'] ?? 20),
             'page'     => intval($_GET['page'] ?? 1),
-            'search'   => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
+            'search'   => sanitize_text_field(wp_unslash($_GET['search'] ?? 'orerp_')),
         ]);
 
         wp_send_json_success($result);
     }
 
-    public function ajax_save_supplier()
+    public function orerp_ajax_save_supplier()
     {
         check_ajax_referer('orerp_save_supplier', 'supplier_nonce');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->save_supplier($_POST);
+        $result = $this->orerp_save_supplier($_POST);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }
@@ -338,7 +338,7 @@ class Obydullah_ERP_Suppliers
         wp_send_json_success(['id' => $result, 'message' => __('Supplier saved.', 'obydullah-restaurant-erp')]);
     }
 
-    public function ajax_delete_supplier()
+    public function orerp_ajax_delete_supplier()
     {
         check_ajax_referer('orerp_suppliers', 'nonce');
         if (!current_user_can('manage_options')) {
@@ -346,11 +346,11 @@ class Obydullah_ERP_Suppliers
         }
 
         $id = intval($_POST['id'] ?? 0);
-        $this->delete_supplier($id);
+        $this->orerp_delete_supplier($id);
         wp_send_json_success(__('Supplier deleted.', 'obydullah-restaurant-erp'));
     }
 
-    public function ajax_get_suppliers_list()
+    public function orerp_ajax_get_suppliers_list()
     {
         check_ajax_referer('orerp_suppliers', 'nonce');
         if (!current_user_can('manage_options')) {
@@ -364,7 +364,7 @@ class Obydullah_ERP_Suppliers
         wp_send_json_success($suppliers);
     }
 
-    public function ajax_get_supplier_products()
+    public function orerp_ajax_get_supplier_products()
     {
         check_ajax_referer('orerp_suppliers', 'nonce');
         if (!current_user_can('manage_options')) {
@@ -372,17 +372,17 @@ class Obydullah_ERP_Suppliers
         }
 
         $supplier_id = intval($_GET['supplier_id'] ?? 0);
-        wp_send_json_success($this->get_supplier_products($supplier_id));
+        wp_send_json_success($this->orerp_get_supplier_products($supplier_id));
     }
 
-    public function ajax_save_supplier_product()
+    public function orerp_ajax_save_supplier_product()
     {
         check_ajax_referer('orerp_suppliers', 'nonce');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->save_supplier_product($_POST);
+        $result = $this->orerp_save_supplier_product($_POST);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }
@@ -390,7 +390,7 @@ class Obydullah_ERP_Suppliers
         wp_send_json_success(['id' => $result, 'message' => __('Product saved.', 'obydullah-restaurant-erp')]);
     }
 
-    public function ajax_delete_supplier_product()
+    public function orerp_ajax_delete_supplier_product()
     {
         check_ajax_referer('orerp_suppliers', 'nonce');
         if (!current_user_can('manage_options')) {
@@ -398,7 +398,7 @@ class Obydullah_ERP_Suppliers
         }
 
         $id = intval($_POST['id'] ?? 0);
-        $this->delete_supplier_product($id);
+        $this->orerp_delete_supplier_product($id);
         wp_send_json_success(__('Product deleted.', 'obydullah-restaurant-erp'));
     }
 }

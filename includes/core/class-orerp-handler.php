@@ -11,8 +11,8 @@ if (!defined('ABSPATH')) {
 }
 
 $orerp_core_files = [
-    'class-erp-helpers.php',
-    'class-erp-integration.php',
+    'class-orerp-helpers.php',
+    'class-orerp-integration.php',
 ];
 
 foreach ($orerp_core_files as $orerp_file) {
@@ -64,51 +64,50 @@ if (!class_exists('Obydullah_ERP_Handler')) {
             $this->helpers = new Obydullah_ERP_Helpers();
             $this->integration = new Obydullah_ERP_Integration();
 
-            $this->load_modules();
+            $this->orerp_load_modules();
 
-            add_action('admin_menu', [$this, 'register_admin_menu'], 99);
-            add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_scripts']);
+            add_action('admin_menu', [$this, 'orerp_register_admin_menu'], 99);
+            add_action('admin_enqueue_scripts', [$this, 'orerp_enqueue_admin_scripts']);
         }
 
-        private function load_modules()
+        private function orerp_load_modules()
         {
             $module_files = [
-                'branches/class-branches'           => 'modules/branches/class-branches.php',
-                'branches/class-branch-transfers'   => 'modules/branches/class-branch-transfers.php',
-                'employees/class-employees'         => 'modules/employees/class-employees.php',
-                'employees/class-attendance'        => 'modules/employees/class-attendance.php',
-                'employees/class-roles'             => 'modules/employees/class-roles.php',
-                'suppliers/class-suppliers'         => 'modules/suppliers/class-suppliers.php',
-                'purchases/class-purchase-orders'   => 'modules/purchases/class-purchase-orders.php',
-                'accounting/class-chart-accounts'   => 'modules/accounting/class-chart-accounts.php',
-                'accounting/class-financial-reports' => 'modules/accounting/class-financial-reports.php',
-                'accounting/class-journal-entries'  => 'modules/accounting/class-journal-entries.php',
-                'accounting/class-ledger'           => 'modules/accounting/class-ledger.php',
-                'accounting/class-tax-reports'      => 'modules/accounting/class-tax-reports.php',
-                'kitchen/class-kitchen-display'     => 'modules/kitchen/class-kitchen-display.php',
-                'kitchen/class-order-workflow'      => 'modules/kitchen/class-order-workflow.php',
-                'kitchen/class-recipes'             => 'modules/kitchen/class-recipes.php',
-                'reports/class-dashboard-reports'   => 'modules/reports/class-dashboard-reports.php',
-                'reports/class-sales-reports'       => 'modules/reports/class-sales-reports.php',
-                'reports/class-inventory-reports'   => 'modules/reports/class-inventory-reports.php',
-                'reports/class-branch-reports'      => 'modules/reports/class-branch-reports.php',
-                'reports/class-reports'             => 'modules/reports/class-reports.php',
+                'branches'           => 'modules/branches/class-orerp-branches.php',
+                'branch_transfers'   => 'modules/branches/class-orerp-branch-transfers.php',
+                'employees'          => 'modules/employees/class-orerp-employees.php',
+                'attendance'         => 'modules/employees/class-orerp-attendance.php',
+                'roles'              => 'modules/employees/class-orerp-roles.php',
+                'suppliers'          => 'modules/suppliers/class-orerp-suppliers.php',
+                'purchases'          => 'modules/purchases/class-orerp-purchase-orders.php',
+                'chart_accounts'     => 'modules/accounting/class-orerp-chart-accounts.php',
+                'financial_reports'  => 'modules/accounting/class-orerp-financial-reports.php',
+                'journal'            => 'modules/accounting/class-orerp-journal-entries.php',
+                'ledger'             => 'modules/accounting/class-orerp-ledger.php',
+                'tax_reports'        => 'modules/accounting/class-orerp-tax-reports.php',
+                'kitchen_display'    => 'modules/kitchen/class-orerp-kitchen-display.php',
+                'order_workflow'     => 'modules/kitchen/class-orerp-order-workflow.php',
+                'recipes'            => 'modules/kitchen/class-orerp-recipes.php',
+                'dashboard_reports'  => 'modules/reports/class-orerp-dashboard-reports.php',
+                'sales_reports'      => 'modules/reports/class-orerp-sales-reports.php',
+                'inventory_reports'  => 'modules/reports/class-orerp-inventory-reports.php',
+                'branch_reports'     => 'modules/reports/class-orerp-branch-reports.php',
+                'reports'            => 'modules/reports/class-orerp-reports.php',
             ];
 
-            foreach ($module_files as $key => $file) {
+            foreach ($module_files as $prop => $file) {
                 $path = ORERP_PATH . 'includes/' . $file;
                 if (file_exists($path)) {
                     require_once $path;
-                    $class_name = $this->get_class_name_from_file($path);
+                    $class_name = $this->orerp_get_class_name_from_file($path);
                     if ($class_name && class_exists($class_name)) {
-                        $prop = $this->get_property_name($key);
                         $this->$prop = new $class_name();
                     }
                 }
             }
         }
 
-        private function get_class_name_from_file($path)
+        private function orerp_get_class_name_from_file($path)
         {
             $content = file_get_contents($path);
             if (preg_match('/class\s+(\w+)/', $content, $matches)) {
@@ -117,7 +116,7 @@ if (!class_exists('Obydullah_ERP_Handler')) {
             return null;
         }
 
-        private function get_property_name($key)
+        private function orerp_get_property_name($key)
         {
             $parts = explode('/', $key);
             $last = end($parts);
@@ -126,14 +125,14 @@ if (!class_exists('Obydullah_ERP_Handler')) {
             return $last;
         }
 
-        public function register_admin_menu()
+        public function orerp_register_admin_menu()
         {
             add_menu_page(
                 __('Restaurant ERP', 'obydullah-restaurant-erp'),
                 __('Restaurant ERP', 'obydullah-restaurant-erp'),
                 'manage_options',
                 'orerp-dashboard',
-                [$this, 'render_dashboard'],
+                [$this, 'orerp_render_dashboard'],
                 'dashicons-building',
                 26
             );
@@ -144,79 +143,79 @@ if (!class_exists('Obydullah_ERP_Handler')) {
                 __('Dashboard', 'obydullah-restaurant-erp'),
                 'manage_options',
                 'orerp-dashboard',
-                [$this, 'render_dashboard']
+                [$this, 'orerp_render_dashboard']
             );
 
             $submenus = [
                 'orerp-branches' => [
                     'label'   => __('Branches', 'obydullah-restaurant-erp'),
                     'class'   => 'branches',
-                    'method'  => 'render_page',
+                    'method'  => 'orerp_render_page',
                 ],
                 'orerp-employees' => [
                     'label'   => __('Employees', 'obydullah-restaurant-erp'),
                     'class'   => 'employees',
-                    'method'  => 'render_page',
+                    'method'  => 'orerp_render_page',
                 ],
                 'orerp-attendance' => [
                     'label'   => __('Attendance & Shifts', 'obydullah-restaurant-erp'),
                     'class'   => 'attendance',
-                    'method'  => 'render_page',
+                    'method'  => 'orerp_render_page',
                 ],
                 'orerp-roles' => [
                     'label'   => __('Roles & Permissions', 'obydullah-restaurant-erp'),
                     'class'   => 'roles',
-                    'method'  => 'render_page',
+                    'method'  => 'orerp_render_page',
                 ],
                 'orerp-suppliers' => [
                     'label'   => __('Suppliers', 'obydullah-restaurant-erp'),
                     'class'   => 'suppliers',
-                    'method'  => 'render_page',
+                    'method'  => 'orerp_render_page',
                 ],
                 'orerp-purchases' => [
                     'label'   => __('Purchases', 'obydullah-restaurant-erp'),
                     'class'   => 'purchases',
-                    'method'  => 'render_page',
+                    'method'  => 'orerp_render_page',
                 ],
                 'orerp-accounting' => [
                     'label'   => __('Accounting', 'obydullah-restaurant-erp'),
                     'class'   => 'chart_accounts',
-                    'method'  => 'render_page',
+                    'method'  => 'orerp_render_page',
                 ],
                 'orerp-journal' => [
                     'label'   => __('Journal Entries', 'obydullah-restaurant-erp'),
                     'class'   => 'journal',
-                    'method'  => 'render_page',
+                    'method'  => 'orerp_render_page',
                 ],
                 'orerp-ledger' => [
                     'label'   => __('General Ledger', 'obydullah-restaurant-erp'),
                     'class'   => 'ledger',
-                    'method'  => 'render_page',
+                    'method'  => 'orerp_render_page',
                 ],
                 'orerp-tax-reports' => [
                     'label'   => __('Tax Reports', 'obydullah-restaurant-erp'),
                     'class'   => 'tax_reports',
-                    'method'  => 'render_page',
+                    'method'  => 'orerp_render_page',
                 ],
                 'orerp-kitchen' => [
                     'label'   => __('Kitchen', 'obydullah-restaurant-erp'),
                     'class'   => 'kitchen_display',
-                    'method'  => 'render_page',
+                    'method'  => 'orerp_render_page',
                 ],
                 'orerp-recipes' => [
                     'label'   => __('Recipes', 'obydullah-restaurant-erp'),
                     'class'   => 'recipes',
-                    'method'  => 'render_page',
+                    'method'  => 'orerp_render_page',
                 ],
                 'orerp-reports' => [
                     'label'   => __('Reports', 'obydullah-restaurant-erp'),
                     'class'   => 'reports',
-                    'method'  => 'render_page',
+                    'method'  => 'orerp_render_page',
                 ],
                 'orerp-settings' => [
                     'label'   => __('Settings', 'obydullah-restaurant-erp'),
                     'class'   => 'Obydullah_ERP_Helpers',
-                    'method'  => 'render_settings_page',
+                    'method'  => 'orerp_render_settings_page',
                     'static'  => true,
                 ],
             ];
@@ -230,7 +229,7 @@ if (!class_exists('Obydullah_ERP_Handler')) {
                     $callback = [$data['class'], $method];
                 } else {
                     $obj = $this->$class_prop ?? null;
-                    $callback = $obj ? [$obj, $method] : [$this, 'render_empty'];
+                    $callback = $obj ? [$obj, $method] : [$this, 'orerp_render_empty'];
                 }
 
                 add_submenu_page(
@@ -244,23 +243,23 @@ if (!class_exists('Obydullah_ERP_Handler')) {
             }
         }
 
-        public function render_dashboard()
+        public function orerp_render_dashboard()
         {
             if ($this->dashboard_reports) {
-                $this->dashboard_reports->render_dashboard();
+                $this->dashboard_reports->orerp_render_dashboard();
             } else {
-                $this->render_empty();
+                $this->orerp_render_empty();
             }
         }
 
-        public function render_empty()
+        public function orerp_render_empty()
         {
             echo '<div class="wrap"><h1>' . esc_html__('Module not loaded', 'obydullah-restaurant-erp') . '</h1></div>';
         }
 
-        public function enqueue_admin_scripts($hook)
+        public function orerp_enqueue_admin_scripts($hook)
         {
-            $current_page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
+            $current_page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : 'orerp_';
 
             if (strpos($hook, 'orerp-') === false && strpos($current_page, 'orerp-') === false) {
                 return;
@@ -268,14 +267,14 @@ if (!class_exists('Obydullah_ERP_Handler')) {
 
             wp_enqueue_style(
                 'orerp-admin-css',
-                ORERP_URL . 'assets/css/erp-admin.css',
+                ORERP_URL . 'assets/css/orerp-admin.css',
                 [],
                 ORERP_VERSION
             );
 
             wp_enqueue_script(
                 'orerp-admin-js',
-                ORERP_URL . 'assets/js/erp-admin.js',
+                ORERP_URL . 'assets/js/orerp-admin.js',
                 ['jquery'],
                 ORERP_VERSION,
                 true
@@ -294,19 +293,19 @@ if (!class_exists('Obydullah_ERP_Handler')) {
             ]);
 
             $module_js = [
-                'orerp-branches'      => ['file' => 'branches.js', 'object' => 'orerpBranches', 'nonce_action' => 'orerp_branches'],
-                'orerp-employees'     => ['file' => 'employees.js', 'object' => 'orerpEmployees', 'nonce_action' => 'orerp_employees'],
-                'orerp-attendance'    => ['file' => 'attendance.js', 'object' => 'orerpEmployees', 'nonce_action' => 'orerp_employees'],
-                'orerp-roles'         => ['file' => 'roles.js', 'object' => 'orerpRoles', 'nonce_action' => 'orerp_roles'],
-                'orerp-suppliers'     => ['file' => 'suppliers.js', 'object' => 'orerpSuppliers', 'nonce_action' => 'orerp_suppliers'],
-                'orerp-purchases'     => ['file' => 'purchases.js', 'object' => 'orerpPurchases', 'nonce_action' => 'orerp_purchases'],
-                'orerp-accounting'    => ['file' => 'accounting.js', 'object' => 'orerpAccounting', 'nonce_action' => 'orerp_accounting'],
-                'orerp-journal'       => ['file' => 'accounting.js', 'object' => 'orerpJournal', 'nonce_action' => 'orerp_journal'],
-                'orerp-ledger'        => ['file' => 'ledger.js', 'object' => 'orerpLedger', 'nonce_action' => 'orerp_ledger'],
-                'orerp-tax-reports'   => ['file' => 'tax-reports.js', 'object' => 'orerpTaxReports', 'nonce_action' => 'orerp_tax_reports'],
-                'orerp-kitchen'       => ['file' => 'kitchen.js', 'object' => 'orerpKitchen', 'nonce_action' => 'orerp_kitchen'],
-                'orerp-recipes'       => ['file' => 'kitchen.js', 'object' => 'orerpRecipes', 'nonce_action' => 'orerp_recipes'],
-                'orerp-reports'       => ['file' => 'reports.js', 'object' => 'orerpReports', 'nonce_action' => 'orerp_reports'],
+                'orerp-branches'      => ['file' => 'orerp-branches.js', 'object' => 'orerpBranches', 'nonce_action' => 'orerp_branches'],
+                'orerp-employees'     => ['file' => 'orerp-employees.js', 'object' => 'orerpEmployees', 'nonce_action' => 'orerp_employees'],
+                'orerp-attendance'    => ['file' => 'orerp-attendance.js', 'object' => 'orerpEmployees', 'nonce_action' => 'orerp_employees'],
+                'orerp-roles'         => ['file' => 'orerp-roles.js', 'object' => 'orerpRoles', 'nonce_action' => 'orerp_roles'],
+                'orerp-suppliers'     => ['file' => 'orerp-suppliers.js', 'object' => 'orerpSuppliers', 'nonce_action' => 'orerp_suppliers'],
+                'orerp-purchases'     => ['file' => 'orerp-purchases.js', 'object' => 'orerpPurchases', 'nonce_action' => 'orerp_purchases'],
+                'orerp-accounting'    => ['file' => 'orerp-accounting.js', 'object' => 'orerpAccounting', 'nonce_action' => 'orerp_accounting'],
+                'orerp-journal'       => ['file' => 'orerp-accounting.js', 'object' => 'orerpJournal', 'nonce_action' => 'orerp_journal'],
+                'orerp-ledger'        => ['file' => 'orerp-ledger.js', 'object' => 'orerpLedger', 'nonce_action' => 'orerp_ledger'],
+                'orerp-tax-reports'   => ['file' => 'orerp-tax-reports.js', 'object' => 'orerpTaxReports', 'nonce_action' => 'orerp_tax_reports'],
+                'orerp-kitchen'       => ['file' => 'orerp-kitchen.js', 'object' => 'orerpKitchen', 'nonce_action' => 'orerp_kitchen'],
+                'orerp-recipes'       => ['file' => 'orerp-kitchen.js', 'object' => 'orerpRecipes', 'nonce_action' => 'orerp_recipes'],
+                'orerp-reports'       => ['file' => 'orerp-reports.js', 'object' => 'orerpReports', 'nonce_action' => 'orerp_reports'],
             ];
 
             if (isset($module_js[$current_page])) {

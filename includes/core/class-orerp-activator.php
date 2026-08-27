@@ -20,14 +20,14 @@ class Obydullah_ERP_Activator
 
         $charset_collate = $wpdb->get_charset_collate();
 
-        self::create_branches_tables($charset_collate);
-        self::create_employees_tables($charset_collate);
-        self::create_suppliers_tables($charset_collate);
-        self::create_purchases_tables($charset_collate);
-        self::create_accounting_tables($charset_collate);
-        self::create_kitchen_tables($charset_collate);
+        self::orerp_create_branches_tables($charset_collate);
+        self::orerp_create_employees_tables($charset_collate);
+        self::orerp_create_suppliers_tables($charset_collate);
+        self::orerp_create_purchases_tables($charset_collate);
+        self::orerp_create_accounting_tables($charset_collate);
+        self::orerp_create_kitchen_tables($charset_collate);
 
-        self::seed_default_data();
+        self::orerp_seed_default_data();
 
         update_option('orerp_version', ORERP_VERSION);
 
@@ -38,7 +38,7 @@ class Obydullah_ERP_Activator
         flush_rewrite_rules();
     }
 
-    private static function create_branches_tables($charset_collate)
+    private static function orerp_create_branches_tables($charset_collate)
     {
         global $wpdb;
 
@@ -103,7 +103,7 @@ class Obydullah_ERP_Activator
         dbDelta($sql);
     }
 
-    private static function create_employees_tables($charset_collate)
+    private static function orerp_create_employees_tables($charset_collate)
     {
         global $wpdb;
 
@@ -156,7 +156,7 @@ class Obydullah_ERP_Activator
         dbDelta($sql);
     }
 
-    private static function create_suppliers_tables($charset_collate)
+    private static function orerp_create_suppliers_tables($charset_collate)
     {
         global $wpdb;
 
@@ -195,7 +195,7 @@ class Obydullah_ERP_Activator
         dbDelta($sql);
     }
 
-    private static function create_purchases_tables($charset_collate)
+    private static function orerp_create_purchases_tables($charset_collate)
     {
         global $wpdb;
 
@@ -252,7 +252,7 @@ class Obydullah_ERP_Activator
         dbDelta($sql);
     }
 
-    private static function create_accounting_tables($charset_collate)
+    private static function orerp_create_accounting_tables($charset_collate)
     {
         global $wpdb;
 
@@ -315,7 +315,7 @@ class Obydullah_ERP_Activator
         dbDelta($sql);
     }
 
-    private static function create_kitchen_tables($charset_collate)
+    private static function orerp_create_kitchen_tables($charset_collate)
     {
         global $wpdb;
 
@@ -398,7 +398,7 @@ class Obydullah_ERP_Activator
         dbDelta($sql);
     }
 
-    private static function seed_default_data()
+    private static function orerp_seed_default_data()
     {
         global $wpdb;
 

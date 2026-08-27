@@ -29,10 +29,10 @@ class Obydullah_ERP_Tax_Reports
         $this->table_lines    = $wpdb->prefix . 'erp_journal_lines';
         $this->table_accounts = $wpdb->prefix . 'erp_accounts';
 
-        add_action('wp_ajax_orerp_get_tax_summary', [$this, 'ajax_get_tax_summary']);
+        add_action('wp_ajax_orerp_get_tax_summary', [$this, 'orerp_ajax_get_tax_summary']);
     }
 
-    public function render_page()
+    public function orerp_render_page()
     {
         ?>
         <div class="wrap">
@@ -76,15 +76,15 @@ class Obydullah_ERP_Tax_Reports
      * @param string $to   End date.
      * @return array
      */
-    public function get_vat_summary($from = '', $to = '')
+    public function orerp_get_vat_summary($from = 'orerp_', $to = 'orerp_')
     {
         global $wpdb;
 
-        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : gmdate('Y-m-01');
-        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
+        $from = Obydullah_ERP_Helpers::orerp_is_valid_date($from) ? $from : gmdate('Y-m-01');
+        $to   = Obydullah_ERP_Helpers::orerp_is_valid_date($to) ? $to : gmdate('Y-m-d');
 
-        $output_vat = $this->get_output_vat($from, $to);
-        $input_vat  = $this->get_input_vat($from, $to);
+        $output_vat = $this->orerp_get_output_vat($from, $to);
+        $input_vat  = $this->orerp_get_input_vat($from, $to);
 
         return [
             'output_vat' => $output_vat,
@@ -102,7 +102,7 @@ class Obydullah_ERP_Tax_Reports
      * @param string $to   End date.
      * @return float
      */
-    public function get_output_vat($from, $to)
+    public function orerp_get_output_vat($from, $to)
     {
         global $wpdb;
 
@@ -132,7 +132,7 @@ class Obydullah_ERP_Tax_Reports
      * @param string $to   End date.
      * @return float
      */
-    public function get_input_vat($from, $to)
+    public function orerp_get_input_vat($from, $to)
     {
         global $wpdb;
 
@@ -152,12 +152,12 @@ class Obydullah_ERP_Tax_Reports
      * @param string $to   End date.
      * @return array
      */
-    public function get_vat_by_month($from = '', $to = '')
+    public function orerp_get_vat_by_month($from = 'orerp_', $to = 'orerp_')
     {
         global $wpdb;
 
-        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : gmdate('Y-01-01');
-        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
+        $from = Obydullah_ERP_Helpers::orerp_is_valid_date($from) ? $from : gmdate('Y-01-01');
+        $to   = Obydullah_ERP_Helpers::orerp_is_valid_date($to) ? $to : gmdate('Y-m-d');
 
         $output_by_month = [];
         $vat_account = $wpdb->get_var($wpdb->prepare(
@@ -216,7 +216,7 @@ class Obydullah_ERP_Tax_Reports
         return $result;
     }
 
-    public function ajax_get_tax_summary()
+    public function orerp_ajax_get_tax_summary()
     {
         check_ajax_referer('orerp_tax_reports', 'nonce');
 
@@ -224,11 +224,11 @@ class Obydullah_ERP_Tax_Reports
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $from = sanitize_text_field(wp_unslash($_GET['from'] ?? ''));
-        $to   = sanitize_text_field(wp_unslash($_GET['to'] ?? ''));
+        $from = sanitize_text_field(wp_unslash($_GET['from'] ?? 'orerp_'));
+        $to   = sanitize_text_field(wp_unslash($_GET['to'] ?? 'orerp_'));
 
-        $summary = $this->get_vat_summary($from, $to);
-        $summary['monthly'] = $this->get_vat_by_month($summary['from'], $summary['to']);
+        $summary = $this->orerp_get_vat_summary($from, $to);
+        $summary['monthly'] = $this->orerp_get_vat_by_month($summary['from'], $summary['to']);
 
         wp_send_json_success($summary);
     }

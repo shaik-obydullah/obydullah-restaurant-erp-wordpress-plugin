@@ -15,12 +15,12 @@ if (!defined('ABSPATH')) {
 
 class Obydullah_ERP_Sales_Reports
 {
-    public function get_sales_report($from = '', $to = '', $branch_id = 0)
+    public function orerp_get_sales_report($from = 'orerp_', $to = 'orerp_', $branch_id = 0)
     {
         global $wpdb;
 
-        $from      = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : gmdate('Y-m-01');
-        $to        = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
+        $from      = Obydullah_ERP_Helpers::orerp_is_valid_date($from) ? $from : gmdate('Y-m-01');
+        $to        = Obydullah_ERP_Helpers::orerp_is_valid_date($to) ? $to : gmdate('Y-m-d');
         $branch_id = intval($branch_id);
 
         $revenue = $wpdb->get_var($wpdb->prepare(

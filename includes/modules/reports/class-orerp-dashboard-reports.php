@@ -14,12 +14,12 @@ class Obydullah_ERP_Dashboard_Reports
 {
     public function __construct()
     {
-        add_action('wp_ajax_orerp_get_dashboard_stats', [$this, 'ajax_get_dashboard_stats']);
+        add_action('wp_ajax_orerp_get_dashboard_stats', [$this, 'orerp_ajax_get_dashboard_stats']);
     }
 
-    public function render_dashboard()
+    public function orerp_render_dashboard()
     {
-        $stats = $this->get_dashboard_stats();
+        $stats = $this->orerp_get_dashboard_stats();
         ?>
         <div class="wrap">
             <h1 class="wp-heading-inline"><?php esc_html_e('Restaurant ERP Dashboard', 'obydullah-restaurant-erp'); ?></h1>
@@ -29,7 +29,7 @@ class Obydullah_ERP_Dashboard_Reports
             <div style="margin-bottom: 20px;">
                 <div class="orerp-branch-selector">
                     <label for="orerp-branch-select"><?php esc_html_e('Current Branch:', 'obydullah-restaurant-erp'); ?></label>
-                    <?php $this->render_branch_selector(); ?>
+                    <?php $this->orerp_render_branch_selector(); ?>
                 </div>
             </div>
 
@@ -62,17 +62,17 @@ class Obydullah_ERP_Dashboard_Reports
 
                 <div class="orerp-summary-card blue">
                     <div class="label"><?php esc_html_e('This Month Revenue', 'obydullah-restaurant-erp'); ?></div>
-                    <div class="value"><?php echo esc_html(Obydullah_ERP_Helpers::format_currency($stats['month_revenue'])); ?></div>
+                    <div class="value"><?php echo esc_html(Obydullah_ERP_Helpers::orerp_format_currency($stats['month_revenue'])); ?></div>
                 </div>
 
                 <div class="orerp-summary-card red">
                     <div class="label"><?php esc_html_e('This Month Expenses', 'obydullah-restaurant-erp'); ?></div>
-                    <div class="value"><?php echo esc_html(Obydullah_ERP_Helpers::format_currency($stats['month_expenses'])); ?></div>
+                    <div class="value"><?php echo esc_html(Obydullah_ERP_Helpers::orerp_format_currency($stats['month_expenses'])); ?></div>
                 </div>
 
                 <div class="orerp-summary-card green">
                     <div class="label"><?php esc_html_e('Net Profit', 'obydullah-restaurant-erp'); ?></div>
-                    <div class="value"><?php echo esc_html(Obydullah_ERP_Helpers::format_currency($stats['net_profit'])); ?></div>
+                    <div class="value"><?php echo esc_html(Obydullah_ERP_Helpers::orerp_format_currency($stats['net_profit'])); ?></div>
                 </div>
             </div>
 
@@ -118,7 +118,7 @@ class Obydullah_ERP_Dashboard_Reports
                     </a>
                 </div>
                 <div id="recent-purchases-list">
-                    <?php $this->render_recent_purchases(); ?>
+                    <?php $this->orerp_render_recent_purchases(); ?>
                 </div>
             </div>
 
@@ -130,18 +130,18 @@ class Obydullah_ERP_Dashboard_Reports
                     </a>
                 </div>
                 <div id="recent-journal-list">
-                    <?php $this->render_recent_journal_entries(); ?>
+                    <?php $this->orerp_render_recent_journal_entries(); ?>
                 </div>
             </div>
         </div>
         <?php
     }
 
-    private function render_branch_selector()
+    private function orerp_render_branch_selector()
     {
         global $wpdb;
         $table = $wpdb->prefix . 'erp_branches';
-        $current = Obydullah_ERP_Helpers::get_current_branch_id();
+        $current = Obydullah_ERP_Helpers::orerp_get_current_branch_id();
 
         $branches = $wpdb->get_results($wpdb->prepare("SELECT id, name FROM {$table} WHERE is_active = 1 AND 1 = %d ORDER BY name", 1));
 
@@ -160,20 +160,20 @@ class Obydullah_ERP_Dashboard_Reports
         echo '</select>';
     }
 
-    private function get_dashboard_stats()
+    private function orerp_get_dashboard_stats()
     {
         global $wpdb;
 
-        $branch_id = Obydullah_ERP_Helpers::get_current_branch_id();
+        $branch_id = Obydullah_ERP_Helpers::orerp_get_current_branch_id();
 
         $stats = [
-            'total_branches'        => $this->get_count($wpdb->prefix . 'erp_branches', 'is_active = 1'),
-            'active_employees'      => $this->get_count($wpdb->prefix . 'erp_employees', 'is_active = 1'),
-            'active_suppliers'      => $this->get_count($wpdb->prefix . 'erp_suppliers', 'is_active = 1'),
-            'pending_purchases'     => $this->get_count($wpdb->prefix . 'erp_purchase_orders', "status IN ('draft','pending','partial')"),
-            'active_kitchen_orders' => $this->get_count($wpdb->prefix . 'erp_kitchen_orders', "status IN ('pending','preparing')"),
-            'month_revenue'         => $this->get_month_revenue(),
-            'month_expenses'        => $this->get_month_expenses(),
+            'total_branches'        => $this->orerp_get_count($wpdb->prefix . 'erp_branches', 'is_active = 1'),
+            'active_employees'      => $this->orerp_get_count($wpdb->prefix . 'erp_employees', 'is_active = 1'),
+            'active_suppliers'      => $this->orerp_get_count($wpdb->prefix . 'erp_suppliers', 'is_active = 1'),
+            'pending_purchases'     => $this->orerp_get_count($wpdb->prefix . 'erp_purchase_orders', "status IN ('draft','pending','partial')"),
+            'active_kitchen_orders' => $this->orerp_get_count($wpdb->prefix . 'erp_kitchen_orders', "status IN ('pending','preparing')"),
+            'month_revenue'         => $this->orerp_get_month_revenue(),
+            'month_expenses'        => $this->orerp_get_month_expenses(),
             'net_profit'            => 0,
         ];
 
@@ -182,13 +182,13 @@ class Obydullah_ERP_Dashboard_Reports
         return $stats;
     }
 
-    private function get_count($table, $where = '1=1')
+    private function orerp_get_count($table, $where = '1=1')
     {
         global $wpdb;
         return intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE {$where} AND 1 = %d", 1)));
     }
 
-    private function get_month_revenue()
+    private function orerp_get_month_revenue()
     {
         global $wpdb;
 
@@ -210,7 +210,7 @@ class Obydullah_ERP_Dashboard_Reports
         return floatval($result);
     }
 
-    private function get_month_expenses()
+    private function orerp_get_month_expenses()
     {
         global $wpdb;
 
@@ -232,7 +232,7 @@ class Obydullah_ERP_Dashboard_Reports
         return floatval($result);
     }
 
-    private function render_recent_purchases()
+    private function orerp_render_recent_purchases()
     {
         global $wpdb;
         $orders = $wpdb->get_results(
@@ -262,16 +262,16 @@ class Obydullah_ERP_Dashboard_Reports
             echo '<tr>';
             echo '<td>' . esc_html($order->po_number) . '</td>';
             echo '<td>' . esc_html($order->supplier_name ?? '-') . '</td>';
-            echo '<td>' . esc_html(Obydullah_ERP_Helpers::format_currency($order->total)) . '</td>';
+            echo '<td>' . esc_html(Obydullah_ERP_Helpers::orerp_format_currency($order->total)) . '</td>';
             echo '<td><span class="status-badge ' . esc_attr($order->status) . '">' . esc_html(ucfirst($order->status)) . '</span></td>';
-            echo '<td>' . esc_html(Obydullah_ERP_Helpers::format_date($order->created_at)) . '</td>';
+            echo '<td>' . esc_html(Obydullah_ERP_Helpers::orerp_format_date($order->created_at)) . '</td>';
             echo '</tr>';
         }
 
         echo '</tbody></table>';
     }
 
-    private function render_recent_journal_entries()
+    private function orerp_render_recent_journal_entries()
     {
         global $wpdb;
         $table = $wpdb->prefix . 'erp_journal_entries';
@@ -296,7 +296,7 @@ class Obydullah_ERP_Dashboard_Reports
         foreach ($entries as $entry) {
             echo '<tr>';
             echo '<td>' . esc_html($entry->entry_number) . '</td>';
-            echo '<td>' . esc_html(Obydullah_ERP_Helpers::format_date($entry->date)) . '</td>';
+            echo '<td>' . esc_html(Obydullah_ERP_Helpers::orerp_format_date($entry->date)) . '</td>';
             echo '<td>' . esc_html($entry->description) . '</td>';
             echo '<td><span class="status-badge ' . ($entry->is_posted ? 'completed' : 'draft') . '">';
             echo esc_html($entry->is_posted ? __('Posted', 'obydullah-restaurant-erp') : __('Draft', 'obydullah-restaurant-erp'));
@@ -307,7 +307,7 @@ class Obydullah_ERP_Dashboard_Reports
         echo '</tbody></table>';
     }
 
-    public function ajax_get_dashboard_stats()
+    public function orerp_ajax_get_dashboard_stats()
     {
         check_ajax_referer('orerp_admin_nonce', 'nonce');
 
@@ -315,6 +315,6 @@ class Obydullah_ERP_Dashboard_Reports
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        wp_send_json_success($this->get_dashboard_stats());
+        wp_send_json_success($this->orerp_get_dashboard_stats());
     }
 }

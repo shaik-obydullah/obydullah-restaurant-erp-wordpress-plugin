@@ -25,9 +25,9 @@ define('ORERP_PATH', plugin_dir_path(__FILE__));
 define('ORERP_URL', plugin_dir_url(__FILE__));
 define('ORERP_BASENAME', plugin_basename(__FILE__));
 
-require_once ORERP_PATH . 'includes/core/class-erp-activator.php';
-require_once ORERP_PATH . 'includes/core/class-erp-deactivator.php';
-require_once ORERP_PATH . 'includes/core/class-erp-handler.php';
+require_once ORERP_PATH . 'includes/core/class-orerp-activator.php';
+require_once ORERP_PATH . 'includes/core/class-orerp-deactivator.php';
+require_once ORERP_PATH . 'includes/core/class-orerp-handler.php';
 
 register_activation_hook(__FILE__, ['Obydullah_ERP_Activator', 'activate']);
 register_deactivation_hook(__FILE__, ['Obydullah_ERP_Deactivator', 'deactivate']);

@@ -23,27 +23,27 @@ class Obydullah_ERP_Purchase_Orders
         $this->items_table = $wpdb->prefix . 'erp_purchase_items';
         $this->payments_table = $wpdb->prefix . 'erp_purchase_payments';
 
-        add_action('wp_ajax_orerp_get_purchases', [$this, 'ajax_get_purchases']);
-        add_action('wp_ajax_orerp_save_purchase', [$this, 'ajax_save_purchase']);
-        add_action('wp_ajax_orerp_delete_purchase', [$this, 'ajax_delete_purchase']);
-        add_action('wp_ajax_orerp_get_purchase_for_edit', [$this, 'ajax_get_purchase_for_edit']);
-        add_action('wp_ajax_orerp_receive_purchase', [$this, 'ajax_receive_purchase']);
-        add_action('wp_ajax_orerp_add_purchase_payment', [$this, 'ajax_add_payment']);
-        add_action('wp_ajax_orerp_get_purchase_payments', [$this, 'ajax_get_payments']);
+        add_action('wp_ajax_orerp_get_purchases', [$this, 'orerp_ajax_get_purchases']);
+        add_action('wp_ajax_orerp_save_purchase', [$this, 'orerp_ajax_save_purchase']);
+        add_action('wp_ajax_orerp_delete_purchase', [$this, 'orerp_ajax_delete_purchase']);
+        add_action('wp_ajax_orerp_get_purchase_for_edit', [$this, 'orerp_ajax_get_purchase_for_edit']);
+        add_action('wp_ajax_orerp_receive_purchase', [$this, 'orerp_ajax_receive_purchase']);
+        add_action('wp_ajax_orerp_add_purchase_payment', [$this, 'orerp_ajax_add_payment']);
+        add_action('wp_ajax_orerp_get_purchase_payments', [$this, 'orerp_ajax_get_payments']);
     }
 
-    public function render_page()
+    public function orerp_render_page()
     {
         $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list';
 
         if ($action === 'add' || $action === 'edit') {
-            $this->render_form($action);
+            $this->orerp_render_form($action);
         } else {
-            $this->render_list();
+            $this->orerp_render_list();
         }
     }
 
-    private function render_list()
+    private function orerp_render_list()
     {
         ?>
         <div class="wrap">
@@ -65,7 +65,7 @@ class Obydullah_ERP_Purchase_Orders
         <?php
     }
 
-    private function render_form($mode)
+    private function orerp_render_form($mode)
     {
         $po = null;
         $items = [];
@@ -73,8 +73,8 @@ class Obydullah_ERP_Purchase_Orders
         if ($mode === 'edit') {
             $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
             if ($id) {
-                $po = $this->get_purchase($id);
-                $items = $this->get_purchase_items($id);
+                $po = $this->orerp_get_purchase($id);
+                $items = $this->orerp_get_purchase_items($id);
             }
         }
 
@@ -91,13 +91,13 @@ class Obydullah_ERP_Purchase_Orders
                 <form id="purchase-form" method="post">
                     <input type="hidden" name="action" value="orerp_save_purchase">
                     <?php wp_nonce_field('orerp_save_purchase', 'purchase_nonce'); ?>
-                    <input type="hidden" name="purchase_id" value="<?php echo esc_attr($po->id ?? ''); ?>">
+                    <input type="hidden" name="purchase_id" value="<?php echo esc_attr($po->id ?? 'orerp_'); ?>">
 
                     <div class="form-row">
                         <div class="form-group">
                             <label><?php esc_html_e('PO Number', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
                             <input type="text" name="po_number" class="regular-text" required readonly
-                                value="<?php echo esc_attr($po->po_number ?? Obydullah_ERP_Helpers::generate_po_number()); ?>">
+                                value="<?php echo esc_attr($po->po_number ?? Obydullah_ERP_Helpers::orerp_generate_po_number()); ?>">
                         </div>
                         <div class="form-group">
                             <label><?php esc_html_e('Branch', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
@@ -107,7 +107,7 @@ class Obydullah_ERP_Purchase_Orders
                                 global $wpdb;
                                 $branches = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}erp_branches WHERE is_active = 1 ORDER BY name");
                                 foreach ($branches as $b) {
-                                    printf('<option value="%s" %s>%s</option>', esc_attr($b->id), selected($po->branch_id ?? '', $b->id, false), esc_html($b->name));
+                                    printf('<option value="%s" %s>%s</option>', esc_attr($b->id), selected($po->branch_id ?? 'orerp_', $b->id, false), esc_html($b->name));
                                 }
                                 ?>
                             </select>
@@ -122,7 +122,7 @@ class Obydullah_ERP_Purchase_Orders
                                 <?php
                                 $suppliers = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}erp_suppliers WHERE is_active = 1 ORDER BY name");
                                 foreach ($suppliers as $s) {
-                                    printf('<option value="%s" %s>%s</option>', esc_attr($s->id), selected($po->supplier_id ?? '', $s->id, false), esc_html($s->name));
+                                    printf('<option value="%s" %s>%s</option>', esc_attr($s->id), selected($po->supplier_id ?? 'orerp_', $s->id, false), esc_html($s->name));
                                 }
                                 ?>
                             </select>
@@ -130,7 +130,7 @@ class Obydullah_ERP_Purchase_Orders
                         <div class="form-group">
                             <label><?php esc_html_e('Expected Date', 'obydullah-restaurant-erp'); ?></label>
                             <input type="date" name="expected_date" class="regular-text"
-                                value="<?php echo esc_attr($po->expected_date ?? ''); ?>">
+                                value="<?php echo esc_attr($po->expected_date ?? 'orerp_'); ?>">
                         </div>
                     </div>
 
@@ -157,7 +157,7 @@ class Obydullah_ERP_Purchase_Orders
                                 </td>
                                 <td><input type="number" name="items[<?php echo esc_attr($item->id); ?>][quantity]" class="po-qty" min="1" value="<?php echo esc_attr($item->quantity); ?>" required></td>
                                 <td><input type="number" name="items[<?php echo esc_attr($item->id); ?>][unit_cost]" class="po-cost" step="0.01" min="0" value="<?php echo esc_attr($item->unit_cost); ?>" required></td>
-                                <td class="po-item-total"><?php echo esc_html(Obydullah_ERP_Helpers::format_currency($item->total)); ?></td>
+                                <td class="po-item-total"><?php echo esc_html(Obydullah_ERP_Helpers::orerp_format_currency($item->total)); ?></td>
                                 <td><button type="button" class="button remove-item">X</button></td>
                             </tr>
                             <?php endforeach; ?>
@@ -171,7 +171,7 @@ class Obydullah_ERP_Purchase_Orders
                             </tr>
                             <tr>
                                 <td colspan="3" class="text-right"><strong><?php esc_html_e('Subtotal:', 'obydullah-restaurant-erp'); ?></strong></td>
-                                <td><strong id="po-subtotal"><?php echo esc_html(Obydullah_ERP_Helpers::format_currency($po->subtotal ?? 0)); ?></strong></td>
+                                <td><strong id="po-subtotal"><?php echo esc_html(Obydullah_ERP_Helpers::orerp_format_currency($po->subtotal ?? 0)); ?></strong></td>
                                 <td></td>
                             </tr>
                             <tr>
@@ -181,7 +181,7 @@ class Obydullah_ERP_Purchase_Orders
                             </tr>
                             <tr>
                                 <td colspan="3" class="text-right"><strong><?php esc_html_e('Total:', 'obydullah-restaurant-erp'); ?></strong></td>
-                                <td><strong id="po-total"><?php echo esc_html(Obydullah_ERP_Helpers::format_currency($po->total ?? 0)); ?></strong></td>
+                                <td><strong id="po-total"><?php echo esc_html(Obydullah_ERP_Helpers::orerp_format_currency($po->total ?? 0)); ?></strong></td>
                                 <td></td>
                             </tr>
                         </tfoot>
@@ -189,7 +189,7 @@ class Obydullah_ERP_Purchase_Orders
 
                     <div class="form-group" style="margin-top: 15px;">
                         <label><?php esc_html_e('Notes', 'obydullah-restaurant-erp'); ?></label>
-                        <textarea name="notes" rows="3" class="large-text"><?php echo esc_textarea($po->notes ?? ''); ?></textarea>
+                        <textarea name="notes" rows="3" class="large-text"><?php echo esc_textarea($po->notes ?? 'orerp_'); ?></textarea>
                     </div>
 
                     <p class="submit">
@@ -204,11 +204,11 @@ class Obydullah_ERP_Purchase_Orders
         <?php
     }
 
-    public function get_purchases($args = [])
+    public function orerp_get_purchases($args = [])
     {
         global $wpdb;
 
-        $defaults = ['per_page' => 20, 'page' => 1, 'search' => '', 'status' => ''];
+        $defaults = ['per_page' => 20, 'page' => 1, 'search' => 'orerp_', 'status' => 'orerp_'];
         $args = wp_parse_args($args, $defaults);
 
         $where = '1=1';
@@ -245,8 +245,8 @@ class Obydullah_ERP_Purchase_Orders
 
         $helpers = new Obydullah_ERP_Helpers();
         foreach ($results as &$row) {
-            $row->formatted_total = Obydullah_ERP_Helpers::format_currency($row->total);
-            $row->formatted_date = $helpers->format_date($row->created_at);
+            $row->formatted_total = Obydullah_ERP_Helpers::orerp_format_currency($row->total);
+            $row->formatted_date = $helpers->orerp_format_date($row->created_at);
         }
 
         return [
@@ -257,13 +257,13 @@ class Obydullah_ERP_Purchase_Orders
         ];
     }
 
-    public function get_purchase($id)
+    public function orerp_get_purchase($id)
     {
         global $wpdb;
         return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", intval($id)));
     }
 
-    public function get_purchase_items($purchase_id)
+    public function orerp_get_purchase_items($purchase_id)
     {
         global $wpdb;
         return $wpdb->get_results($wpdb->prepare(
@@ -276,17 +276,17 @@ class Obydullah_ERP_Purchase_Orders
         )) ?: [];
     }
 
-    public function save_purchase($data)
+    public function orerp_save_purchase($data)
     {
         global $wpdb;
 
         $id = intval($data['purchase_id'] ?? 0);
-        $po_number = sanitize_text_field($data['po_number'] ?? '');
+        $po_number = sanitize_text_field($data['po_number'] ?? 'orerp_');
         $supplier_id = intval($data['supplier_id'] ?? 0);
         $branch_id = intval($data['branch_id'] ?? 0);
-        $expected_date = sanitize_text_field($data['expected_date'] ?? '');
+        $expected_date = sanitize_text_field($data['expected_date'] ?? 'orerp_');
         $tax_amount = floatval($data['tax_amount'] ?? 0);
-        $notes = sanitize_textarea_field($data['notes'] ?? '');
+        $notes = sanitize_textarea_field($data['notes'] ?? 'orerp_');
         $items = $data['items'] ?? [];
 
         if (!$supplier_id || !$branch_id) {
@@ -294,7 +294,7 @@ class Obydullah_ERP_Purchase_Orders
         }
 
         if (empty($po_number)) {
-            $po_number = Obydullah_ERP_Helpers::generate_po_number();
+            $po_number = Obydullah_ERP_Helpers::orerp_generate_po_number();
         }
 
         $subtotal = 0;
@@ -350,12 +350,12 @@ class Obydullah_ERP_Purchase_Orders
         return $id;
     }
 
-    public function receive_purchase($id)
+    public function orerp_receive_purchase($id)
     {
         global $wpdb;
 
         $id = intval($id);
-        $po = $this->get_purchase($id);
+        $po = $this->orerp_get_purchase($id);
 
         if (!$po) {
             return new WP_Error('not_found', __('Purchase order not found.', 'obydullah-restaurant-erp'));
@@ -365,7 +365,7 @@ class Obydullah_ERP_Purchase_Orders
             return new WP_Error('invalid_status', __('Cannot receive in current status.', 'obydullah-restaurant-erp'));
         }
 
-        $items = $this->get_purchase_items($id);
+        $items = $this->orerp_get_purchase_items($id);
         $branches = new Obydullah_ERP_Branches();
 
         foreach ($items as $item) {
@@ -378,7 +378,7 @@ class Obydullah_ERP_Purchase_Orders
 
                 $branches->update_branch_stock($po->branch_id, $item->product_id, $remaining);
 
-                $this->create_journal_entry_for_purchase($po, $item, $remaining);
+                $this->orerp_create_journal_entry_for_purchase($po, $item, $remaining);
             }
         }
 
@@ -390,13 +390,13 @@ class Obydullah_ERP_Purchase_Orders
         return true;
     }
 
-    private function create_journal_entry_for_purchase($po, $item, $qty)
+    private function orerp_create_journal_entry_for_purchase($po, $item, $qty)
     {
         if (class_exists('Obydullah_ERP_Journal_Entries')) {
             $journal = new Obydullah_ERP_Journal_Entries();
             $amount = $qty * $item->unit_cost;
 
-            $journal->create_entry([
+            $journal->orerp_create_entry([
                 'date'          => current_time('Y-m-d'),
                 'description'   => sprintf('PO %s - %s', $po->po_number, $item->product_name),
                 'reference_type' => 'purchase',
@@ -409,15 +409,15 @@ class Obydullah_ERP_Purchase_Orders
         }
     }
 
-    public function add_payment($data)
+    public function orerp_add_payment($data)
     {
         global $wpdb;
 
         $purchase_id = intval($data['purchase_id'] ?? 0);
         $amount = floatval($data['amount'] ?? 0);
         $payment_method = sanitize_text_field($data['payment_method'] ?? 'cash');
-        $reference = sanitize_text_field($data['reference'] ?? '');
-        $notes = sanitize_textarea_field($data['notes'] ?? '');
+        $reference = sanitize_text_field($data['reference'] ?? 'orerp_');
+        $notes = sanitize_textarea_field($data['notes'] ?? 'orerp_');
         $payment_date = sanitize_text_field($data['payment_date'] ?? current_time('Y-m-d'));
 
         if (!$purchase_id || $amount <= 0) {
@@ -433,10 +433,10 @@ class Obydullah_ERP_Purchase_Orders
             'payment_date'   => $payment_date,
         ]);
 
-        $po = $this->get_purchase($purchase_id);
+        $po = $this->orerp_get_purchase($purchase_id);
         if ($po) {
             $journal = new Obydullah_ERP_Journal_Entries();
-            $journal->create_entry([
+            $journal->orerp_create_entry([
                 'date'          => $payment_date,
                 'description'   => sprintf('Payment for PO %s', $po->po_number),
                 'reference_type' => 'purchase_payment',
@@ -451,7 +451,7 @@ class Obydullah_ERP_Purchase_Orders
         return $wpdb->insert_id;
     }
 
-    public function get_payments($purchase_id)
+    public function orerp_get_payments($purchase_id)
     {
         global $wpdb;
         return $wpdb->get_results($wpdb->prepare(
@@ -460,7 +460,7 @@ class Obydullah_ERP_Purchase_Orders
         )) ?: [];
     }
 
-    public function delete_purchase($id)
+    public function orerp_delete_purchase($id)
     {
         global $wpdb;
         $wpdb->delete($this->items_table, ['purchase_id' => intval($id)]);
@@ -471,31 +471,31 @@ class Obydullah_ERP_Purchase_Orders
 
     // --- AJAX ---
 
-    public function ajax_get_purchases()
+    public function orerp_ajax_get_purchases()
     {
         check_ajax_referer('orerp_purchases', 'nonce');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->get_purchases([
+        $result = $this->orerp_get_purchases([
             'per_page' => intval($_GET['per_page'] ?? 20),
             'page'     => intval($_GET['page'] ?? 1),
-            'search'   => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
-            'status'   => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
+            'search'   => sanitize_text_field(wp_unslash($_GET['search'] ?? 'orerp_')),
+            'status'   => sanitize_text_field(wp_unslash($_GET['status'] ?? 'orerp_')),
         ]);
 
         wp_send_json_success($result);
     }
 
-    public function ajax_save_purchase()
+    public function orerp_ajax_save_purchase()
     {
         check_ajax_referer('orerp_save_purchase', 'purchase_nonce');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->save_purchase($_POST);
+        $result = $this->orerp_save_purchase($_POST);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }
@@ -503,7 +503,7 @@ class Obydullah_ERP_Purchase_Orders
         wp_send_json_success(['id' => $result, 'message' => __('Purchase order saved.', 'obydullah-restaurant-erp')]);
     }
 
-    public function ajax_delete_purchase()
+    public function orerp_ajax_delete_purchase()
     {
         check_ajax_referer('orerp_purchases', 'nonce');
         if (!current_user_can('manage_options')) {
@@ -511,11 +511,11 @@ class Obydullah_ERP_Purchase_Orders
         }
 
         $id = intval($_POST['id'] ?? 0);
-        $this->delete_purchase($id);
+        $this->orerp_delete_purchase($id);
         wp_send_json_success(__('Purchase order deleted.', 'obydullah-restaurant-erp'));
     }
 
-    public function ajax_get_purchase_for_edit()
+    public function orerp_ajax_get_purchase_for_edit()
     {
         check_ajax_referer('orerp_purchases', 'nonce');
         if (!current_user_can('manage_options')) {
@@ -523,16 +523,16 @@ class Obydullah_ERP_Purchase_Orders
         }
 
         $id = intval($_GET['id'] ?? 0);
-        $po = $this->get_purchase($id);
+        $po = $this->orerp_get_purchase($id);
         if (!$po) {
             wp_send_json_error(__('Purchase order not found.', 'obydullah-restaurant-erp'));
         }
 
-        $po->items = $this->get_purchase_items($id);
+        $po->items = $this->orerp_get_purchase_items($id);
         wp_send_json_success($po);
     }
 
-    public function ajax_receive_purchase()
+    public function orerp_ajax_receive_purchase()
     {
         check_ajax_referer('orerp_purchases', 'nonce');
         if (!current_user_can('manage_options')) {
@@ -540,7 +540,7 @@ class Obydullah_ERP_Purchase_Orders
         }
 
         $id = intval($_POST['purchase_id'] ?? 0);
-        $result = $this->receive_purchase($id);
+        $result = $this->orerp_receive_purchase($id);
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
@@ -549,14 +549,14 @@ class Obydullah_ERP_Purchase_Orders
         wp_send_json_success(__('Purchase order received successfully.', 'obydullah-restaurant-erp'));
     }
 
-    public function ajax_add_payment()
+    public function orerp_ajax_add_payment()
     {
         check_ajax_referer('orerp_purchases', 'nonce');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->add_payment($_POST);
+        $result = $this->orerp_add_payment($_POST);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }
@@ -564,7 +564,7 @@ class Obydullah_ERP_Purchase_Orders
         wp_send_json_success(['id' => $result, 'message' => __('Payment recorded.', 'obydullah-restaurant-erp')]);
     }
 
-    public function ajax_get_payments()
+    public function orerp_ajax_get_payments()
     {
         check_ajax_referer('orerp_purchases', 'nonce');
         if (!current_user_can('manage_options')) {
@@ -572,6 +572,6 @@ class Obydullah_ERP_Purchase_Orders
         }
 
         $purchase_id = intval($_GET['purchase_id'] ?? 0);
-        wp_send_json_success($this->get_payments($purchase_id));
+        wp_send_json_success($this->orerp_get_payments($purchase_id));
     }
 }

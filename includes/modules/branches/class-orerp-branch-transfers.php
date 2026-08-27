@@ -21,20 +21,20 @@ class Obydullah_ERP_Branch_Transfers
         $this->table = $wpdb->prefix . 'erp_transfers';
         $this->items_table = $wpdb->prefix . 'erp_transfer_items';
 
-        add_action('wp_ajax_orerp_get_transfers', [$this, 'ajax_get_transfers']);
-        add_action('wp_ajax_orerp_save_transfer', [$this, 'ajax_save_transfer']);
-        add_action('wp_ajax_orerp_receive_transfer', [$this, 'ajax_receive_transfer']);
-        add_action('wp_ajax_orerp_cancel_transfer', [$this, 'ajax_cancel_transfer']);
+        add_action('wp_ajax_orerp_get_transfers', [$this, 'orerp_ajax_get_transfers']);
+        add_action('wp_ajax_orerp_save_transfer', [$this, 'orerp_ajax_save_transfer']);
+        add_action('wp_ajax_orerp_receive_transfer', [$this, 'orerp_ajax_receive_transfer']);
+        add_action('wp_ajax_orerp_cancel_transfer', [$this, 'orerp_ajax_cancel_transfer']);
     }
 
-    public function get_transfers($args = [])
+    public function orerp_get_transfers($args = [])
     {
         global $wpdb;
 
         $defaults = [
             'per_page' => 20,
             'page'     => 1,
-            'status'   => '',
+            'status'   => 'orerp_',
             'branch_id' => 0,
         ];
 
@@ -82,7 +82,7 @@ class Obydullah_ERP_Branch_Transfers
         ];
     }
 
-    public function get_transfer($id)
+    public function orerp_get_transfer($id)
     {
         global $wpdb;
 
@@ -110,13 +110,13 @@ class Obydullah_ERP_Branch_Transfers
         return $transfer;
     }
 
-    public function create_transfer($data)
+    public function orerp_create_transfer($data)
     {
         global $wpdb;
 
         $from_branch = intval($data['from_branch_id'] ?? 0);
         $to_branch = intval($data['to_branch_id'] ?? 0);
-        $notes = sanitize_textarea_field($data['notes'] ?? '');
+        $notes = sanitize_textarea_field($data['notes'] ?? 'orerp_');
         $items = json_decode(stripslashes($data['items'] ?? '[]'), true);
 
         if (!$from_branch || !$to_branch) {
@@ -156,12 +156,12 @@ class Obydullah_ERP_Branch_Transfers
         return $transfer_id;
     }
 
-    public function receive_transfer($id, $received_items = [])
+    public function orerp_receive_transfer($id, $received_items = [])
     {
         global $wpdb;
 
         $id = intval($id);
-        $transfer = $this->get_transfer($id);
+        $transfer = $this->orerp_get_transfer($id);
 
         if (!$transfer) {
             return new WP_Error('not_found', __('Transfer not found.', 'obydullah-restaurant-erp'));
@@ -194,12 +194,12 @@ class Obydullah_ERP_Branch_Transfers
         return true;
     }
 
-    public function cancel_transfer($id)
+    public function orerp_cancel_transfer($id)
     {
         global $wpdb;
         $id = intval($id);
 
-        $transfer = $this->get_transfer($id);
+        $transfer = $this->orerp_get_transfer($id);
 
         if (!$transfer) {
             return new WP_Error('not_found', __('Transfer not found.', 'obydullah-restaurant-erp'));
@@ -216,7 +216,7 @@ class Obydullah_ERP_Branch_Transfers
         return true;
     }
 
-    public function ajax_get_transfers()
+    public function orerp_ajax_get_transfers()
     {
         check_ajax_referer('orerp_branches', 'nonce');
 
@@ -224,17 +224,17 @@ class Obydullah_ERP_Branch_Transfers
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->get_transfers([
+        $result = $this->orerp_get_transfers([
             'per_page'  => intval($_GET['per_page'] ?? 20),
             'page'      => intval($_GET['page'] ?? 1),
-            'status'    => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
+            'status'    => sanitize_text_field(wp_unslash($_GET['status'] ?? 'orerp_')),
             'branch_id' => intval($_GET['branch_id'] ?? 0),
         ]);
 
         wp_send_json_success($result);
     }
 
-    public function ajax_save_transfer()
+    public function orerp_ajax_save_transfer()
     {
         check_ajax_referer('orerp_branches', 'nonce');
 
@@ -242,7 +242,7 @@ class Obydullah_ERP_Branch_Transfers
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->create_transfer($_POST);
+        $result = $this->orerp_create_transfer($_POST);
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
@@ -254,7 +254,7 @@ class Obydullah_ERP_Branch_Transfers
         ]);
     }
 
-    public function ajax_receive_transfer()
+    public function orerp_ajax_receive_transfer()
     {
         check_ajax_referer('orerp_branches', 'nonce');
 
@@ -265,7 +265,7 @@ class Obydullah_ERP_Branch_Transfers
         $id = intval($_POST['transfer_id'] ?? 0);
         $received_items = array_map('intval', $_POST['received_items'] ?? []);
 
-        $result = $this->receive_transfer($id, $received_items);
+        $result = $this->orerp_receive_transfer($id, $received_items);
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
@@ -274,7 +274,7 @@ class Obydullah_ERP_Branch_Transfers
         wp_send_json_success(__('Transfer received successfully.', 'obydullah-restaurant-erp'));
     }
 
-    public function ajax_cancel_transfer()
+    public function orerp_ajax_cancel_transfer()
     {
         check_ajax_referer('orerp_branches', 'nonce');
 
@@ -284,7 +284,7 @@ class Obydullah_ERP_Branch_Transfers
 
         $id = intval($_POST['transfer_id'] ?? 0);
 
-        $result = $this->cancel_transfer($id);
+        $result = $this->orerp_cancel_transfer($id);
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());

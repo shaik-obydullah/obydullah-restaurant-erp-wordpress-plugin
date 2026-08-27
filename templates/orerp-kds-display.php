@@ -128,7 +128,7 @@ $orerp_kds_ajax  = admin_url('admin-ajax.php');
         render: function (orders) {
             var grid = this.el('orerp-kds-grid');
             var counts = { pending: 0, preparing: 0, ready: 0 };
-            var html = '';
+            var html = 'orerp_';
 
             (orders || []).forEach(function (o) {
                 if (counts[o.status] !== undefined) counts[o.status]++;

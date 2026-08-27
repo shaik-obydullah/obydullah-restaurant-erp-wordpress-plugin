@@ -27,9 +27,9 @@ class Obydullah_ERP_Order_Workflow
         $this->table_orders = $wpdb->prefix . 'erp_kitchen_orders';
         $this->table_items  = $wpdb->prefix . 'erp_kitchen_order_items';
 
-        add_action('wp_ajax_orerp_create_workflow_order', [$this, 'ajax_create_from_order']);
-        add_action('wp_ajax_orerp_get_workflow_order', [$this, 'ajax_get_order']);
-        add_action('wp_ajax_orerp_update_workflow_item', [$this, 'ajax_update_item']);
+        add_action('wp_ajax_orerp_create_workflow_order', [$this, 'orerp_ajax_create_from_order']);
+        add_action('wp_ajax_orerp_get_workflow_order', [$this, 'orerp_ajax_get_order']);
+        add_action('wp_ajax_orerp_update_workflow_item', [$this, 'orerp_ajax_update_item']);
     }
 
     /**
@@ -41,7 +41,7 @@ class Obydullah_ERP_Order_Workflow
      * @param int    $priority    Priority level.
      * @return int|WP_Error Kitchen order ID.
      */
-    public function create_from_order($wc_order_id, $branch_id, $station = '', $priority = 0)
+    public function orerp_create_from_order($wc_order_id, $branch_id, $station = 'orerp_', $priority = 0)
     {
         global $wpdb;
 
@@ -118,7 +118,7 @@ class Obydullah_ERP_Order_Workflow
      * @param int $kitchen_order_id Kitchen order ID.
      * @return object|null
      */
-    public function get_order($kitchen_order_id)
+    public function orerp_get_order($kitchen_order_id)
     {
         global $wpdb;
 
@@ -137,7 +137,7 @@ class Obydullah_ERP_Order_Workflow
         )) ?: [];
 
         foreach ($order->items as &$item) {
-            $item->started_at = $item->started_at ?: '';
+            $item->started_at = $item->started_at ?: 'orerp_';
         }
 
         return $order;
@@ -150,7 +150,7 @@ class Obydullah_ERP_Order_Workflow
      * @param string $status  pending|preparing|ready.
      * @return bool|WP_Error
      */
-    public function update_item_status($item_id, $status)
+    public function orerp_update_item_status($item_id, $status)
     {
         global $wpdb;
 
@@ -175,7 +175,7 @@ class Obydullah_ERP_Order_Workflow
 
         $wpdb->update($this->table_items, $update, ['id' => intval($item_id)]);
 
-        $this->maybe_complete_order($item->kitchen_order_id);
+        $this->orerp_maybe_complete_order($item->kitchen_order_id);
 
         return true;
     }
@@ -187,7 +187,7 @@ class Obydullah_ERP_Order_Workflow
      * @param int $kitchen_order_id Kitchen order ID.
      * @return void
      */
-    private function maybe_complete_order($kitchen_order_id)
+    private function orerp_maybe_complete_order($kitchen_order_id)
     {
         global $wpdb;
 
@@ -218,7 +218,7 @@ class Obydullah_ERP_Order_Workflow
 
     // --- AJAX ---
 
-    public function ajax_create_from_order()
+    public function orerp_ajax_create_from_order()
     {
         check_ajax_referer('orerp_kitchen', 'nonce');
 
@@ -226,10 +226,10 @@ class Obydullah_ERP_Order_Workflow
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->create_from_order(
+        $result = $this->orerp_create_from_order(
             intval($_POST['order_id'] ?? 0),
             intval($_POST['branch_id'] ?? 0),
-            sanitize_text_field(wp_unslash($_POST['station'] ?? '')),
+            sanitize_text_field(wp_unslash($_POST['station'] ?? 'orerp_')),
             intval($_POST['priority'] ?? 0)
         );
 
@@ -240,7 +240,7 @@ class Obydullah_ERP_Order_Workflow
         wp_send_json_success(['id' => $result, 'message' => __('Kitchen order created.', 'obydullah-restaurant-erp')]);
     }
 
-    public function ajax_get_order()
+    public function orerp_ajax_get_order()
     {
         check_ajax_referer('orerp_kitchen', 'nonce');
 
@@ -248,7 +248,7 @@ class Obydullah_ERP_Order_Workflow
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $order = $this->get_order(intval($_GET['id'] ?? 0));
+        $order = $this->orerp_get_order(intval($_GET['id'] ?? 0));
 
         if (!$order) {
             wp_send_json_error(__('Kitchen order not found.', 'obydullah-restaurant-erp'));
@@ -257,7 +257,7 @@ class Obydullah_ERP_Order_Workflow
         wp_send_json_success($order);
     }
 
-    public function ajax_update_item()
+    public function orerp_ajax_update_item()
     {
         check_ajax_referer('orerp_kitchen', 'nonce');
 
@@ -266,9 +266,9 @@ class Obydullah_ERP_Order_Workflow
         }
 
         $item_id = intval($_POST['item_id'] ?? 0);
-        $status  = sanitize_text_field(wp_unslash($_POST['status'] ?? ''));
+        $status  = sanitize_text_field(wp_unslash($_POST['status'] ?? 'orerp_'));
 
-        $result = $this->update_item_status($item_id, $status);
+        $result = $this->orerp_update_item_status($item_id, $status);
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());

@@ -19,25 +19,25 @@ class Obydullah_ERP_Employees
         global $wpdb;
         $this->table = $wpdb->prefix . 'erp_employees';
 
-        add_action('wp_ajax_orerp_get_employees', [$this, 'ajax_get_employees']);
-        add_action('wp_ajax_orerp_save_employee', [$this, 'ajax_save_employee']);
-        add_action('wp_ajax_orerp_delete_employee', [$this, 'ajax_delete_employee']);
-        add_action('wp_ajax_orerp_get_employee_for_edit', [$this, 'ajax_get_employee_for_edit']);
-        add_action('wp_ajax_orerp_get_employees_list', [$this, 'ajax_get_employees_list']);
+        add_action('wp_ajax_orerp_get_employees', [$this, 'orerp_ajax_get_employees']);
+        add_action('wp_ajax_orerp_save_employee', [$this, 'orerp_ajax_save_employee']);
+        add_action('wp_ajax_orerp_delete_employee', [$this, 'orerp_ajax_delete_employee']);
+        add_action('wp_ajax_orerp_get_employee_for_edit', [$this, 'orerp_ajax_get_employee_for_edit']);
+        add_action('wp_ajax_orerp_get_employees_list', [$this, 'orerp_ajax_get_employees_list']);
     }
 
-    public function render_page()
+    public function orerp_render_page()
     {
         $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list';
 
         if ($action === 'add' || $action === 'edit') {
-            $this->render_form($action);
+            $this->orerp_render_form($action);
         } else {
-            $this->render_list();
+            $this->orerp_render_list();
         }
     }
 
-    private function render_list()
+    private function orerp_render_list()
     {
         ?>
         <div class="wrap">
@@ -59,18 +59,18 @@ class Obydullah_ERP_Employees
         <?php
     }
 
-    private function render_form($mode)
+    private function orerp_render_form($mode)
     {
         $employee = null;
         if ($mode === 'edit') {
             $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
             if ($id) {
-                $employee = $this->get_employee($id);
+                $employee = $this->orerp_get_employee($id);
             }
         }
 
         $title = $mode === 'edit' ? __('Edit Employee', 'obydullah-restaurant-erp') : __('Add New Employee', 'obydullah-restaurant-erp');
-        $branches = $this->get_branches_list();
+        $branches = $this->orerp_get_branches_list();
         ?>
         <div class="wrap">
             <h1 class="wp-heading-inline"><?php echo esc_html($title); ?></h1>
@@ -83,20 +83,20 @@ class Obydullah_ERP_Employees
                 <form id="employee-form" method="post">
                     <input type="hidden" name="action" value="orerp_save_employee">
                     <?php wp_nonce_field('orerp_save_employee', 'employee_nonce'); ?>
-                    <input type="hidden" name="employee_id" id="employee-id" value="<?php echo esc_attr($employee->id ?? ''); ?>">
+                    <input type="hidden" name="employee_id" id="employee-id" value="<?php echo esc_attr($employee->id ?? 'orerp_'); ?>">
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="emp-code"><?php esc_html_e('Employee Code', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
                             <input type="text" id="emp-code" name="employee_code" class="regular-text" required
-                                value="<?php echo esc_attr($employee->employee_code ?? Obydullah_ERP_Helpers::generate_employee_code()); ?>"
+                                value="<?php echo esc_attr($employee->employee_code ?? Obydullah_ERP_Helpers::orerp_generate_employee_code()); ?>"
                                 placeholder="<?php esc_attr_e('Auto-generated', 'obydullah-restaurant-erp'); ?>">
                         </div>
 
                         <div class="form-group">
                             <label for="emp-name"><?php esc_html_e('Full Name', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
                             <input type="text" id="emp-name" name="display_name" class="regular-text" required
-                                value="<?php echo esc_attr($employee->display_name ?? ''); ?>">
+                                value="<?php echo esc_attr($employee->display_name ?? 'orerp_'); ?>">
                         </div>
                     </div>
 
@@ -104,13 +104,13 @@ class Obydullah_ERP_Employees
                         <div class="form-group">
                             <label for="emp-email"><?php esc_html_e('Email', 'obydullah-restaurant-erp'); ?></label>
                             <input type="email" id="emp-email" name="email" class="regular-text"
-                                value="<?php echo esc_attr($employee->email ?? ''); ?>">
+                                value="<?php echo esc_attr($employee->email ?? 'orerp_'); ?>">
                         </div>
 
                         <div class="form-group">
                             <label for="emp-phone"><?php esc_html_e('Phone', 'obydullah-restaurant-erp'); ?></label>
                             <input type="tel" id="emp-phone" name="phone" class="regular-text"
-                                value="<?php echo esc_attr($employee->phone ?? ''); ?>">
+                                value="<?php echo esc_attr($employee->phone ?? 'orerp_'); ?>">
                         </div>
                     </div>
 
@@ -121,7 +121,7 @@ class Obydullah_ERP_Employees
                                 <option value=""><?php esc_html_e('Select Branch', 'obydullah-restaurant-erp'); ?></option>
                                 <?php foreach ($branches as $branch): ?>
                                 <option value="<?php echo esc_attr($branch->id); ?>"
-                                    <?php selected($employee->branch_id ?? '', $branch->id); ?>>
+                                    <?php selected($employee->branch_id ?? 'orerp_', $branch->id); ?>>
                                     <?php echo esc_html($branch->name . ' (' . $branch->code . ')'); ?>
                                 </option>
                                 <?php endforeach; ?>
@@ -131,7 +131,7 @@ class Obydullah_ERP_Employees
                         <div class="form-group">
                             <label for="emp-position"><?php esc_html_e('Position', 'obydullah-restaurant-erp'); ?></label>
                             <input type="text" id="emp-position" name="position" class="regular-text"
-                                value="<?php echo esc_attr($employee->position ?? ''); ?>"
+                                value="<?php echo esc_attr($employee->position ?? 'orerp_'); ?>"
                                 placeholder="<?php esc_attr_e('e.g. Chef, Waiter, Manager', 'obydullah-restaurant-erp'); ?>">
                         </div>
                     </div>
@@ -155,7 +155,7 @@ class Obydullah_ERP_Employees
                             <label for="emp-wp-user"><?php esc_html_e('WordPress User', 'obydullah-restaurant-erp'); ?></label>
                             <select id="emp-wp-user" name="user_id" class="regular-text">
                                 <option value="0"><?php esc_html_e('None', 'obydullah-restaurant-erp'); ?></option>
-                                <?php $this->render_user_options($employee->user_id ?? 0); ?>
+                                <?php $this->orerp_render_user_options($employee->user_id ?? 0); ?>
                             </select>
                             <p class="description"><?php esc_html_e('Link to WP user for login access', 'obydullah-restaurant-erp'); ?></p>
                         </div>
@@ -174,13 +174,13 @@ class Obydullah_ERP_Employees
                         <div class="form-group">
                             <label for="emp-emergency-contact"><?php esc_html_e('Contact Name', 'obydullah-restaurant-erp'); ?></label>
                             <input type="text" id="emp-emergency-contact" name="emergency_contact" class="regular-text"
-                                value="<?php echo esc_attr($employee->emergency_contact ?? ''); ?>">
+                                value="<?php echo esc_attr($employee->emergency_contact ?? 'orerp_'); ?>">
                         </div>
 
                         <div class="form-group">
                             <label for="emp-emergency-phone"><?php esc_html_e('Contact Phone', 'obydullah-restaurant-erp'); ?></label>
                             <input type="tel" id="emp-emergency-phone" name="emergency_phone" class="regular-text"
-                                value="<?php echo esc_attr($employee->emergency_phone ?? ''); ?>">
+                                value="<?php echo esc_attr($employee->emergency_phone ?? 'orerp_'); ?>">
                         </div>
                     </div>
 
@@ -196,7 +196,7 @@ class Obydullah_ERP_Employees
         <?php
     }
 
-    private function render_user_options($selected = 0)
+    private function orerp_render_user_options($selected = 0)
     {
         $users = get_users(['fields' => ['ID', 'display_name'], 'orderby' => 'display_name']);
         foreach ($users as $user) {
@@ -209,22 +209,22 @@ class Obydullah_ERP_Employees
         }
     }
 
-    private function get_branches_list()
+    private function orerp_get_branches_list()
     {
         global $wpdb;
         return $wpdb->get_results("SELECT id, name, code FROM {$wpdb->prefix}erp_branches WHERE is_active = 1 ORDER BY name");
     }
 
-    public function get_employees($args = [])
+    public function orerp_get_employees($args = [])
     {
         global $wpdb;
 
         $defaults = [
             'per_page' => 20,
             'page'     => 1,
-            'search'   => '',
+            'search'   => 'orerp_',
             'branch_id' => 0,
-            'active'   => '',
+            'active'   => 'orerp_',
         ];
 
         $args = wp_parse_args($args, $defaults);
@@ -242,7 +242,7 @@ class Obydullah_ERP_Employees
             $prepare_args[] = $args['branch_id'];
         }
 
-        if ($args['active'] !== '') {
+        if ($args['active'] !== 'orerp_') {
             $where .= ' AND e.is_active = %d';
             $prepare_args[] = intval($args['active']);
         }
@@ -274,7 +274,7 @@ class Obydullah_ERP_Employees
         ];
     }
 
-    public function get_employee($id)
+    public function orerp_get_employee($id)
     {
         global $wpdb;
         return $wpdb->get_row($wpdb->prepare(
@@ -286,23 +286,23 @@ class Obydullah_ERP_Employees
         ));
     }
 
-    public function save_employee($data)
+    public function orerp_save_employee($data)
     {
         global $wpdb;
 
         $id = intval($data['employee_id'] ?? 0);
-        $employee_code = sanitize_text_field($data['employee_code'] ?? '');
-        $display_name = sanitize_text_field($data['display_name'] ?? '');
-        $email = sanitize_email($data['email'] ?? '');
-        $phone = sanitize_text_field($data['phone'] ?? '');
+        $employee_code = sanitize_text_field($data['employee_code'] ?? 'orerp_');
+        $display_name = sanitize_text_field($data['display_name'] ?? 'orerp_');
+        $email = sanitize_email($data['email'] ?? 'orerp_');
+        $phone = sanitize_text_field($data['phone'] ?? 'orerp_');
         $branch_id = intval($data['branch_id'] ?? 0);
-        $position = sanitize_text_field($data['position'] ?? '');
+        $position = sanitize_text_field($data['position'] ?? 'orerp_');
         $hourly_rate = floatval($data['hourly_rate'] ?? 0);
-        $hire_date = sanitize_text_field($data['hire_date'] ?? '');
+        $hire_date = sanitize_text_field($data['hire_date'] ?? 'orerp_');
         $user_id = intval($data['user_id'] ?? 0);
         $is_active = isset($data['is_active']) ? 1 : 0;
-        $emergency_contact = sanitize_text_field($data['emergency_contact'] ?? '');
-        $emergency_phone = sanitize_text_field($data['emergency_phone'] ?? '');
+        $emergency_contact = sanitize_text_field($data['emergency_contact'] ?? 'orerp_');
+        $emergency_phone = sanitize_text_field($data['emergency_phone'] ?? 'orerp_');
 
         if (empty($employee_code) || empty($display_name) || !$branch_id) {
             return new WP_Error('missing_fields', __('Employee code, name, and branch are required.', 'obydullah-restaurant-erp'));
@@ -352,14 +352,14 @@ class Obydullah_ERP_Employees
         return $id;
     }
 
-    public function delete_employee($id)
+    public function orerp_delete_employee($id)
     {
         global $wpdb;
         $wpdb->delete($this->table, ['id' => intval($id)]);
         return true;
     }
 
-    public function ajax_get_employees()
+    public function orerp_ajax_get_employees()
     {
         check_ajax_referer('orerp_employees', 'nonce');
 
@@ -367,23 +367,23 @@ class Obydullah_ERP_Employees
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->get_employees([
+        $result = $this->orerp_get_employees([
             'per_page'  => intval($_GET['per_page'] ?? 20),
             'page'      => intval($_GET['page'] ?? 1),
-            'search'    => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
+            'search'    => sanitize_text_field(wp_unslash($_GET['search'] ?? 'orerp_')),
             'branch_id' => intval($_GET['branch_id'] ?? 0),
         ]);
 
         $helpers = new Obydullah_ERP_Helpers();
         foreach ($result['employees'] as &$emp) {
-            $emp->formatted_hire_date = $helpers->format_date($emp->hire_date);
-            $emp->formatted_rate = Obydullah_ERP_Helpers::format_currency($emp->hourly_rate);
+            $emp->formatted_hire_date = $helpers->orerp_format_date($emp->hire_date);
+            $emp->formatted_rate = Obydullah_ERP_Helpers::orerp_format_currency($emp->hourly_rate);
         }
 
         wp_send_json_success($result);
     }
 
-    public function ajax_save_employee()
+    public function orerp_ajax_save_employee()
     {
         check_ajax_referer('orerp_save_employee', 'employee_nonce');
 
@@ -391,7 +391,7 @@ class Obydullah_ERP_Employees
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->save_employee($_POST);
+        $result = $this->orerp_save_employee($_POST);
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
@@ -400,7 +400,7 @@ class Obydullah_ERP_Employees
         wp_send_json_success(['id' => $result, 'message' => __('Employee saved successfully.', 'obydullah-restaurant-erp')]);
     }
 
-    public function ajax_delete_employee()
+    public function orerp_ajax_delete_employee()
     {
         check_ajax_referer('orerp_employees', 'nonce');
 
@@ -413,11 +413,11 @@ class Obydullah_ERP_Employees
             wp_send_json_error(__('Invalid employee ID.', 'obydullah-restaurant-erp'));
         }
 
-        $this->delete_employee($id);
+        $this->orerp_delete_employee($id);
         wp_send_json_success(__('Employee deleted successfully.', 'obydullah-restaurant-erp'));
     }
 
-    public function ajax_get_employee_for_edit()
+    public function orerp_ajax_get_employee_for_edit()
     {
         check_ajax_referer('orerp_employees', 'nonce');
 
@@ -426,7 +426,7 @@ class Obydullah_ERP_Employees
         }
 
         $id = intval($_GET['id'] ?? 0);
-        $employee = $this->get_employee($id);
+        $employee = $this->orerp_get_employee($id);
 
         if (!$employee) {
             wp_send_json_error(__('Employee not found.', 'obydullah-restaurant-erp'));
@@ -435,7 +435,7 @@ class Obydullah_ERP_Employees
         wp_send_json_success($employee);
     }
 
-    public function ajax_get_employees_list()
+    public function orerp_ajax_get_employees_list()
     {
         check_ajax_referer('orerp_employees', 'nonce');
 

@@ -27,7 +27,7 @@ class Obydullah_ERP_Ledger
         $this->table_lines    = $wpdb->prefix . 'erp_journal_lines';
         $this->table_accounts = $wpdb->prefix . 'erp_accounts';
 
-        add_action('wp_ajax_orerp_get_ledger', [$this, 'ajax_get_ledger']);
+        add_action('wp_ajax_orerp_get_ledger', [$this, 'orerp_ajax_get_ledger']);
     }
 
     /**
@@ -38,7 +38,7 @@ class Obydullah_ERP_Ledger
      * @param string $account_id Optional account filter.
      * @return array
      */
-    public function render_page()
+    public function orerp_render_page()
     {
         global $wpdb;
         $accounts = $wpdb->get_results("SELECT id, code, name FROM {$this->table_accounts} WHERE is_active = 1 ORDER BY code") ?: [];
@@ -83,12 +83,12 @@ class Obydullah_ERP_Ledger
         <?php
     }
 
-    public function get_ledger($from = '', $to = '', $account_id = 0)
+    public function orerp_get_ledger($from = 'orerp_', $to = 'orerp_', $account_id = 0)
     {
         global $wpdb;
 
-        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : gmdate('Y-m-01');
-        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
+        $from = Obydullah_ERP_Helpers::orerp_is_valid_date($from) ? $from : gmdate('Y-m-01');
+        $to   = Obydullah_ERP_Helpers::orerp_is_valid_date($to) ? $to : gmdate('Y-m-d');
 
         $where   = " AND je.is_posted = 1 AND je.date BETWEEN %s AND %s";
         $prepare = [$from, $to];
@@ -110,7 +110,7 @@ class Obydullah_ERP_Ledger
         )) ?: [];
 
         // Opening balances grouped by account (everything posted before $from).
-        $opening = $this->get_opening_balances($from, $account_id);
+        $opening = $this->orerp_get_opening_balances($from, $account_id);
 
         $ledger = [];
         $totals = ['debit' => 0, 'credit' => 0];
@@ -170,7 +170,7 @@ class Obydullah_ERP_Ledger
      * @param int    $account_id Account filter.
      * @return array
      */
-    private function get_opening_balances($from, $account_id = 0)
+    private function orerp_get_opening_balances($from, $account_id = 0)
     {
         global $wpdb;
 
@@ -201,7 +201,7 @@ class Obydullah_ERP_Ledger
 
     // --- AJAX ---
 
-    public function ajax_get_ledger()
+    public function orerp_ajax_get_ledger()
     {
         check_ajax_referer('orerp_ledger', 'nonce');
 
@@ -209,11 +209,11 @@ class Obydullah_ERP_Ledger
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $from       = sanitize_text_field(wp_unslash($_POST['from'] ?? ''));
-        $to         = sanitize_text_field(wp_unslash($_POST['to'] ?? ''));
+        $from       = sanitize_text_field(wp_unslash($_POST['from'] ?? 'orerp_'));
+        $to         = sanitize_text_field(wp_unslash($_POST['to'] ?? 'orerp_'));
         $account_id = intval($_POST['account_id'] ?? 0);
 
-        $result = $this->get_ledger($from, $to, $account_id);
+        $result = $this->orerp_get_ledger($from, $to, $account_id);
 
         // Apply account type ordering for a stable display.
         $order = ['asset' => 0, 'liability' => 1, 'equity' => 2, 'revenue' => 3, 'expense' => 4];
