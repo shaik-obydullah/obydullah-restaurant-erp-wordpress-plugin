@@ -216,8 +216,8 @@ class Obydullah_ERP_Kitchen_Display
 
         foreach ($branches as $branch) {
             printf(
-                '<option value="%d" %s>%s</option>',
-                $branch->id,
+                '<option value="%s" %s>%s</option>',
+                esc_attr($branch->id),
                 selected($selected, $branch->id, false),
                 esc_html($branch->name)
             );
@@ -260,22 +260,19 @@ class Obydullah_ERP_Kitchen_Display
         $where .= ' AND DATE(ko.created_at) = %s';
         $prepare_args[] = $date_filter;
 
-        $total_query = $wpdb->prepare(
+        $total = (int) $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$this->table_orders} ko WHERE {$where}",
-            ...$prepare_args
-        );
-        $total = (int) $wpdb->get_var($total_query);
+            $prepare_args
+        ));
 
         $offset = ($args['page'] - 1) * $args['per_page'];
-        $query = $wpdb->prepare(
+        $orders = $wpdb->get_results($wpdb->prepare(
             "SELECT ko.* FROM {$this->table_orders} ko
             WHERE {$where}
             ORDER BY ko.priority DESC, ko.created_at ASC
             LIMIT %d OFFSET %d",
-            ...array_merge($prepare_args, [$args['per_page'], $offset])
-        );
-
-        $orders = $wpdb->get_results($query) ?: [];
+            array_merge($prepare_args, [$args['per_page'], $offset])
+        )) ?: [];
 
         foreach ($orders as &$order) {
             $order->formatted_time = Obydullah_ERP_Helpers::format_date($order->created_at);
@@ -294,24 +291,40 @@ class Obydullah_ERP_Kitchen_Display
     {
         global $wpdb;
 
-        $where_branch = $branch_id > 0 ? $wpdb->prepare(' AND branch_id = %d', $branch_id) : '';
         $today = current_time('Y-m-d');
 
-        $pending = (int) $wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'pending' {$where_branch}"
-        );
-        $preparing = (int) $wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'preparing' {$where_branch}"
-        );
-        $ready = (int) $wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'ready' {$where_branch}"
-        );
-        $completed_today = (int) $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'completed' AND DATE(completed_at) = %s {$where_branch}",
+        if ($branch_id > 0) {
+            $pending = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'pending' AND branch_id = %d",
+                $branch_id
+            ));
+            $preparing = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'preparing' AND branch_id = %d",
+                $branch_id
+            ));
+            $ready = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'ready' AND branch_id = %d",
+                $branch_id
+            ));
+            $completed_today = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'completed' AND DATE(completed_at) = %s AND branch_id = %d",
+                $today, $branch_id
+            ));
+        } else {
+            $pending = (int) $wpdb->get_var(
+                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'pending'"
+            );
+            $preparing = (int) $wpdb->get_var(
+                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'preparing'"
+            );
+            $ready = (int) $wpdb->get_var(
+                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'ready'"
+            );
+            $completed_today = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'completed' AND DATE(completed_at) = %s",
                 $today
-            )
-        );
+            ));
+        }
 
         return compact('pending', 'preparing', 'ready', 'completed_today');
     }
@@ -423,14 +436,11 @@ class Obydullah_ERP_Kitchen_Display
     {
         global $wpdb;
 
-        $recipes_table = $wpdb->prefix . 'erp_recipes';
-        $employees_table = $wpdb->prefix . 'erp_employees';
-
         return $wpdb->get_results($wpdb->prepare(
             "SELECT pt.*, r.name AS recipe_name, COALESCE(NULLIF(e.employee_code, ''), u.display_name) AS employee_name
             FROM {$this->table_prep} pt
-            LEFT JOIN {$recipes_table} r ON pt.recipe_id = r.id
-            LEFT JOIN {$employees_table} e ON pt.employee_id = e.id
+            LEFT JOIN {$wpdb->prefix}erp_recipes r ON pt.recipe_id = r.id
+            LEFT JOIN {$wpdb->prefix}erp_employees e ON pt.employee_id = e.id
             LEFT JOIN {$wpdb->users} u ON e.user_id = u.ID
             WHERE pt.kitchen_order_id = %d
             ORDER BY pt.started_at DESC",

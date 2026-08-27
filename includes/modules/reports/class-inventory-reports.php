@@ -33,20 +33,37 @@ class Obydullah_ERP_Inventory_Reports
             $prepare[] = $branch_id;
         }
 
-        $query = "SELECT bs.*, p.post_title AS product_name, b.name AS branch_name,
-                COALESCE((
-                    SELECT pi.unit_cost FROM {$purchase_items} pi
-                    WHERE pi.product_id = bs.product_id
-                    ORDER BY pi.id DESC LIMIT 1
-                ), 0) AS cost_price
-            FROM {$stock_table} bs
-            LEFT JOIN {$wpdb->posts} p ON bs.product_id = p.ID
-            LEFT JOIN {$branches_table} b ON bs.branch_id = b.id
-            WHERE {$where}
-            ORDER BY p.post_title ASC";
-
-        $query = $prepare ? $wpdb->prepare($query, $prepare) : $query;
-        $stock = $wpdb->get_results($query) ?: [];
+        if (!empty($prepare)) {
+            $stock = $wpdb->get_results($wpdb->prepare(
+                "SELECT bs.*, p.post_title AS product_name, b.name AS branch_name,
+                    COALESCE((
+                        SELECT pi.unit_cost FROM {$purchase_items} pi
+                        WHERE pi.product_id = bs.product_id
+                        ORDER BY pi.id DESC LIMIT 1
+                    ), 0) AS cost_price
+                FROM {$stock_table} bs
+                LEFT JOIN {$wpdb->posts} p ON bs.product_id = p.ID
+                LEFT JOIN {$branches_table} b ON bs.branch_id = b.id
+                WHERE {$where}
+                ORDER BY p.post_title ASC",
+                $prepare
+            )) ?: [];
+        } else {
+            $stock = $wpdb->get_results($wpdb->prepare(
+                "SELECT bs.*, p.post_title AS product_name, b.name AS branch_name,
+                    COALESCE((
+                        SELECT pi.unit_cost FROM {$purchase_items} pi
+                        WHERE pi.product_id = bs.product_id
+                        ORDER BY pi.id DESC LIMIT 1
+                    ), 0) AS cost_price
+                FROM {$stock_table} bs
+                LEFT JOIN {$wpdb->posts} p ON bs.product_id = p.ID
+                LEFT JOIN {$branches_table} b ON bs.branch_id = b.id
+                WHERE 1=1 AND 1 = %d
+                ORDER BY p.post_title ASC",
+                1
+            )) ?: [];
+        }
 
         // Backward-compatible min_stock alias for the reports UI.
         foreach ($stock as &$item) {

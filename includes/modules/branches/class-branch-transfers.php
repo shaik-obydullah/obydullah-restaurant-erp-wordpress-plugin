@@ -55,13 +55,14 @@ class Obydullah_ERP_Branch_Transfers
 
         $offset = ($args['page'] - 1) * $args['per_page'];
 
-        $count_query = "SELECT COUNT(*) FROM {$this->table} t WHERE {$where}";
         if (!empty($prepare_args)) {
-            $count_query = $wpdb->prepare($count_query, $prepare_args);
+            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} t WHERE {$where}", $prepare_args)));
+        } else {
+            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} t WHERE 1 = %d", 1)));
         }
-        $total = intval($wpdb->get_var($count_query));
 
-        $query = "SELECT t.*,
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT t.*,
             fb.name as from_branch_name,
             tb.name as to_branch_name
             FROM {$this->table} t
@@ -69,10 +70,9 @@ class Obydullah_ERP_Branch_Transfers
             LEFT JOIN {$wpdb->prefix}erp_branches tb ON t.to_branch_id = tb.id
             WHERE {$where}
             ORDER BY t.created_at DESC
-            LIMIT %d OFFSET %d";
-
-        $query_args = array_merge($prepare_args, [$args['per_page'], $offset]);
-        $results = $wpdb->get_results($wpdb->prepare($query, $query_args));
+            LIMIT %d OFFSET %d",
+            array_merge($prepare_args, [$args['per_page'], $offset])
+        ));
 
         return [
             'transfers'    => $results ?: [],
@@ -263,7 +263,7 @@ class Obydullah_ERP_Branch_Transfers
         }
 
         $id = intval($_POST['transfer_id'] ?? 0);
-        $received_items = $_POST['received_items'] ?? [];
+        $received_items = array_map('intval', $_POST['received_items'] ?? []);
 
         $result = $this->receive_transfer($id, $received_items);
 

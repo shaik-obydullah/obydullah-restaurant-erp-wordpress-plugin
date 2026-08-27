@@ -201,15 +201,16 @@ class Obydullah_ERP_Journal_Entries
 
         $offset = ($args['page'] - 1) * $args['per_page'];
 
-        $count_query = "SELECT COUNT(*) FROM {$this->entries_table} WHERE {$where}";
         if (!empty($prepare_args)) {
-            $count_query = $wpdb->prepare($count_query, $prepare_args);
+            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->entries_table} WHERE {$where}", $prepare_args)));
+        } else {
+            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->entries_table} WHERE 1 = %d", 1)));
         }
-        $total = intval($wpdb->get_var($count_query));
 
-        $query = "SELECT * FROM {$this->entries_table} WHERE {$where} ORDER BY date DESC, id DESC LIMIT %d OFFSET %d";
-        $query_args = array_merge($prepare_args, [$args['per_page'], $offset]);
-        $results = $wpdb->get_results($wpdb->prepare($query, $query_args));
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$this->entries_table} WHERE {$where} ORDER BY date DESC, id DESC LIMIT %d OFFSET %d",
+            array_merge($prepare_args, [$args['per_page'], $offset])
+        ));
 
         $helpers = new Obydullah_ERP_Helpers();
         foreach ($results as &$row) {

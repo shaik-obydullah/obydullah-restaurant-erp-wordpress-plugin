@@ -143,15 +143,15 @@ class Obydullah_ERP_Dashboard_Reports
         $table = $wpdb->prefix . 'erp_branches';
         $current = Obydullah_ERP_Helpers::get_current_branch_id();
 
-        $branches = $wpdb->get_results("SELECT id, name FROM {$table} WHERE is_active = 1 ORDER BY name");
+        $branches = $wpdb->get_results($wpdb->prepare("SELECT id, name FROM {$table} WHERE is_active = 1 AND 1 = %d ORDER BY name", 1));
 
         echo '<select id="orerp-branch-select">';
         echo '<option value="0">' . esc_html__('All Branches', 'obydullah-restaurant-erp') . '</option>';
 
         foreach ($branches as $branch) {
             printf(
-                '<option value="%d" %s>%s</option>',
-                intval($branch->id),
+                '<option value="%s" %s>%s</option>',
+                esc_attr($branch->id),
                 selected($current, $branch->id, false),
                 esc_html($branch->name)
             );
@@ -185,22 +185,19 @@ class Obydullah_ERP_Dashboard_Reports
     private function get_count($table, $where = '1=1')
     {
         global $wpdb;
-        return intval($wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE {$where}"));
+        return intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE {$where} AND 1 = %d", 1)));
     }
 
     private function get_month_revenue()
     {
         global $wpdb;
-        $table = $wpdb->prefix . 'erp_journal_entries';
-        $lines = $wpdb->prefix . 'erp_journal_lines';
-        $accounts = $wpdb->prefix . 'erp_accounts';
 
         $result = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT COALESCE(SUM(jl.credit), 0)
-                FROM {$lines} jl
-                JOIN {$table} je ON jl.entry_id = je.id
-                JOIN {$accounts} ja ON jl.account_id = ja.id
+                FROM {$wpdb->prefix}erp_journal_lines jl
+                JOIN {$wpdb->prefix}erp_journal_entries je ON jl.entry_id = je.id
+                JOIN {$wpdb->prefix}erp_accounts ja ON jl.account_id = ja.id
                 WHERE ja.type = 'revenue'
                 AND je.is_posted = 1
                 AND MONTH(je.date) = %d
@@ -216,16 +213,13 @@ class Obydullah_ERP_Dashboard_Reports
     private function get_month_expenses()
     {
         global $wpdb;
-        $table = $wpdb->prefix . 'erp_journal_entries';
-        $lines = $wpdb->prefix . 'erp_journal_lines';
-        $accounts = $wpdb->prefix . 'erp_accounts';
 
         $result = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT COALESCE(SUM(jl.debit), 0)
-                FROM {$lines} jl
-                JOIN {$table} je ON jl.entry_id = je.id
-                JOIN {$accounts} ja ON jl.account_id = ja.id
+                FROM {$wpdb->prefix}erp_journal_lines jl
+                JOIN {$wpdb->prefix}erp_journal_entries je ON jl.entry_id = je.id
+                JOIN {$wpdb->prefix}erp_accounts ja ON jl.account_id = ja.id
                 WHERE ja.type = 'expense'
                 AND je.is_posted = 1
                 AND MONTH(je.date) = %d
@@ -241,14 +235,11 @@ class Obydullah_ERP_Dashboard_Reports
     private function render_recent_purchases()
     {
         global $wpdb;
-        $po_table = $wpdb->prefix . 'erp_purchase_orders';
-        $supplier_table = $wpdb->prefix . 'erp_suppliers';
-
         $orders = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT po.*, s.name as supplier_name
-                FROM {$po_table} po
-                LEFT JOIN {$supplier_table} s ON po.supplier_id = s.id
+                FROM {$wpdb->prefix}erp_purchase_orders po
+                LEFT JOIN {$wpdb->prefix}erp_suppliers s ON po.supplier_id = s.id
                 ORDER BY po.created_at DESC LIMIT 5"
             )
         );
@@ -286,7 +277,7 @@ class Obydullah_ERP_Dashboard_Reports
         $table = $wpdb->prefix . 'erp_journal_entries';
 
         $entries = $wpdb->get_results(
-            "SELECT * FROM {$table} ORDER BY date DESC, id DESC LIMIT 5"
+            $wpdb->prepare("SELECT * FROM {$table} WHERE 1 = %d ORDER BY date DESC, id DESC LIMIT 5", 1)
         );
 
         if (empty($entries)) {

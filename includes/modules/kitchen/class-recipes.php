@@ -194,7 +194,7 @@ class Obydullah_ERP_Recipes
         foreach ($products as $product) {
             printf(
                 '<option value="%d" %s>%s</option>',
-                $product->get_id(),
+                intval($product->get_id()),
                 selected($selected, $product->get_id(), false),
                 esc_html($product->get_name())
             );
@@ -221,24 +221,21 @@ class Obydullah_ERP_Recipes
             $prepare_args[] = '%' . $wpdb->esc_like($args['search']) . '%';
         }
 
-        $count_query = $wpdb->prepare(
+        $total = (int) $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$this->table_recipes} r WHERE {$where}",
-            ...$prepare_args
-        );
-        $total = (int) $wpdb->get_var($count_query);
+            $prepare_args
+        ));
 
         $offset = ($args['page'] - 1) * $args['per_page'];
-        $query = $wpdb->prepare(
+        $recipes = $wpdb->get_results($wpdb->prepare(
             "SELECT r.*, p.post_title AS product_name
             FROM {$this->table_recipes} r
             LEFT JOIN {$wpdb->posts} p ON r.product_id = p.ID
             WHERE {$where}
             ORDER BY r.name ASC
             LIMIT %d OFFSET %d",
-            ...array_merge($prepare_args, [$args['per_page'], $offset])
-        );
-
-        $recipes = $wpdb->get_results($query) ?: [];
+            array_merge($prepare_args, [$args['per_page'], $offset])
+        )) ?: [];
 
         foreach ($recipes as &$recipe) {
             $recipe->ingredient_count = (int) $wpdb->get_var($wpdb->prepare(

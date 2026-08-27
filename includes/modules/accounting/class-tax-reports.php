@@ -47,12 +47,12 @@ class Obydullah_ERP_Tax_Reports
                     <div class="filter-group">
                         <label><?php esc_html_e('From', 'obydullah-restaurant-erp'); ?></label>
                         <input type="date" id="tax-date-from" class="regular-text"
-                            value="<?php echo esc_attr(date('Y-m-01')); ?>">
+                            value="<?php echo esc_attr(gmdate('Y-m-01')); ?>">
                     </div>
                     <div class="filter-group">
                         <label><?php esc_html_e('To', 'obydullah-restaurant-erp'); ?></label>
                         <input type="date" id="tax-date-to" class="regular-text"
-                            value="<?php echo esc_attr(date('Y-m-d')); ?>">
+                            value="<?php echo esc_attr(gmdate('Y-m-d')); ?>">
                     </div>
                     <div class="filter-actions">
                         <button type="button" id="run-tax-report" class="button button-primary">
@@ -80,8 +80,8 @@ class Obydullah_ERP_Tax_Reports
     {
         global $wpdb;
 
-        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : date('Y-m-01');
-        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : date('Y-m-d');
+        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : gmdate('Y-m-01');
+        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
 
         $output_vat = $this->get_output_vat($from, $to);
         $input_vat  = $this->get_input_vat($from, $to);
@@ -115,13 +115,14 @@ class Obydullah_ERP_Tax_Reports
             return 0;
         }
 
-        $query = "SELECT COALESCE(SUM(jl.credit), 0)
+        return floatval($wpdb->get_var($wpdb->prepare(
+            "SELECT COALESCE(SUM(jl.credit), 0)
             FROM {$this->table_lines} jl
             INNER JOIN {$this->table_entries} je ON jl.entry_id = je.id
             WHERE jl.account_id = %d AND je.is_posted = 1
-                AND je.date BETWEEN %s AND %s";
-
-        return floatval($wpdb->get_var($wpdb->prepare($query, intval($vat_account), $from, $to)));
+                AND je.date BETWEEN %s AND %s",
+            intval($vat_account), $from, $to
+        )));
     }
 
     /**
@@ -135,12 +136,13 @@ class Obydullah_ERP_Tax_Reports
     {
         global $wpdb;
 
-        $query = "SELECT COALESCE(SUM(tax_amount), 0)
+        return floatval($wpdb->get_var($wpdb->prepare(
+            "SELECT COALESCE(SUM(tax_amount), 0)
             FROM {$this->table_orders}
             WHERE status != 'cancelled'
-                AND DATE(created_at) BETWEEN %s AND %s";
-
-        return floatval($wpdb->get_var($wpdb->prepare($query, $from, $to)));
+                AND DATE(created_at) BETWEEN %s AND %s",
+            $from, $to
+        )));
     }
 
     /**
@@ -154,8 +156,8 @@ class Obydullah_ERP_Tax_Reports
     {
         global $wpdb;
 
-        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : date('Y-01-01');
-        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : date('Y-m-d');
+        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : gmdate('Y-01-01');
+        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
 
         $output_by_month = [];
         $vat_account = $wpdb->get_var($wpdb->prepare(

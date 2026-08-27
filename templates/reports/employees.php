@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$report_title = __('Employee Performance Report', 'obydullah-restaurant-erp');
+$orerp_report_title = __('Employee Performance Report', 'obydullah-restaurant-erp');
 include ORERP_PATH . 'templates/reports/header.php';
 ?>
 
@@ -25,14 +25,14 @@ include ORERP_PATH . 'templates/reports/header.php';
         <th class="text-right"><?php esc_html_e('Avg Time (min)', 'obydullah-restaurant-erp'); ?></th>
     </tr></thead>
     <tbody>
-    <?php foreach ($data['employees'] as $e): ?>
+    <?php foreach ($data['employees'] as $orerp_e): ?>
         <tr>
-            <td><strong><?php echo esc_html($e['name']); ?></strong></td>
-            <td><?php echo esc_html($e['branch'] ?: '-'); ?></td>
-            <td class="text-right"><?php echo esc_html($e['days_worked']); ?></td>
-            <td class="text-right"><?php echo esc_html($e['total_hours']); ?></td>
-            <td class="text-right"><?php echo esc_html($e['tasks_completed']); ?></td>
-            <td class="text-right"><?php echo esc_html($e['avg_time_min'] > 0 ? $e['avg_time_min'] : '-'); ?></td>
+            <td><strong><?php echo esc_html($orerp_e['name']); ?></strong></td>
+            <td><?php echo esc_html($orerp_e['branch'] ?: '-'); ?></td>
+            <td class="text-right"><?php echo esc_html($orerp_e['days_worked']); ?></td>
+            <td class="text-right"><?php echo esc_html($orerp_e['total_hours']); ?></td>
+            <td class="text-right"><?php echo esc_html($orerp_e['tasks_completed']); ?></td>
+            <td class="text-right"><?php echo esc_html($orerp_e['avg_time_min'] > 0 ? $orerp_e['avg_time_min'] : '-'); ?></td>
         </tr>
     <?php endforeach; ?>
     </tbody>

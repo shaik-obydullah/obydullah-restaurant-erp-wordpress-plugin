@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$report_title = __('Branch Comparison Report', 'obydullah-restaurant-erp');
+$orerp_report_title = __('Branch Comparison Report', 'obydullah-restaurant-erp');
 include ORERP_PATH . 'templates/reports/header.php';
 ?>
 
@@ -27,20 +27,20 @@ include ORERP_PATH . 'templates/reports/header.php';
     <tbody>
     <?php
     $totals = ['employees' => 0, 'po_count' => 0, 'po_total' => 0, 'kitchen_orders' => 0, 'stock_items' => 0];
-    foreach ($data['branches'] as $b):
-        $totals['employees'] += $b['employees'];
-        $totals['po_count'] += $b['po_count'];
-        $totals['po_total'] += $b['po_total'];
-        $totals['kitchen_orders'] += $b['kitchen_orders'];
-        $totals['stock_items'] += $b['stock_items'];
+    foreach ($data['branches'] as $orerp_b):
+        $totals['employees'] += $orerp_b['employees'];
+        $totals['po_count'] += $orerp_b['po_count'];
+        $totals['po_total'] += $orerp_b['po_total'];
+        $totals['kitchen_orders'] += $orerp_b['kitchen_orders'];
+        $totals['stock_items'] += $orerp_b['stock_items'];
     ?>
         <tr>
-            <td><strong><?php echo esc_html($b['branch_name']); ?></strong></td>
-            <td class="text-right"><?php echo esc_html($b['employees']); ?></td>
-            <td class="text-right"><?php echo esc_html($b['po_count']); ?></td>
-            <td class="text-right"><?php echo esc_html(Obydullah_ERP_Helpers::format_currency($b['po_total'])); ?></td>
-            <td class="text-right"><?php echo esc_html($b['kitchen_orders']); ?></td>
-            <td class="text-right"><?php echo esc_html($b['stock_items']); ?></td>
+            <td><strong><?php echo esc_html($orerp_b['branch_name']); ?></strong></td>
+            <td class="text-right"><?php echo esc_html($orerp_b['employees']); ?></td>
+            <td class="text-right"><?php echo esc_html($orerp_b['po_count']); ?></td>
+            <td class="text-right"><?php echo esc_html(Obydullah_ERP_Helpers::format_currency($orerp_b['po_total'])); ?></td>
+            <td class="text-right"><?php echo esc_html($orerp_b['kitchen_orders']); ?></td>
+            <td class="text-right"><?php echo esc_html($orerp_b['stock_items']); ?></td>
         </tr>
     <?php endforeach; ?>
     <tr class="totals-row">

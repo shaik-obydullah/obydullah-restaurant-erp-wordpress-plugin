@@ -71,11 +71,11 @@ class Obydullah_ERP_Attendance
                     </div>
                     <div class="filter-group">
                         <label><?php esc_html_e('From', 'obydullah-restaurant-erp'); ?></label>
-                        <input type="date" id="attendance-date-from" class="regular-text" value="<?php echo esc_attr(date('Y-m-01')); ?>">
+                        <input type="date" id="attendance-date-from" class="regular-text" value="<?php echo esc_attr(gmdate('Y-m-01')); ?>">
                     </div>
                     <div class="filter-group">
                         <label><?php esc_html_e('To', 'obydullah-restaurant-erp'); ?></label>
-                        <input type="date" id="attendance-date-to" class="regular-text" value="<?php echo esc_attr(date('Y-m-d')); ?>">
+                        <input type="date" id="attendance-date-to" class="regular-text" value="<?php echo esc_attr(gmdate('Y-m-d')); ?>">
                     </div>
                     <div class="filter-actions">
                         <button type="button" id="run-attendance" class="button button-primary">
@@ -206,22 +206,22 @@ class Obydullah_ERP_Attendance
 
         $offset = ($args['page'] - 1) * $args['per_page'];
 
-        $count_query = "SELECT COUNT(*) FROM {$this->attendance_table} a WHERE {$where}";
         if (!empty($prepare_args)) {
-            $count_query = $wpdb->prepare($count_query, $prepare_args);
+            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->attendance_table} a WHERE {$where}", $prepare_args)));
+        } else {
+            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->attendance_table} a WHERE 1 = %d", 1)));
         }
-        $total = intval($wpdb->get_var($count_query));
 
-        $query = "SELECT a.*, e.employee_code, e.position, b.name as branch_name
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT a.*, e.employee_code, e.position, b.name as branch_name
             FROM {$this->attendance_table} a
             LEFT JOIN {$this->employees_table} e ON a.employee_id = e.id
             LEFT JOIN {$wpdb->prefix}erp_branches b ON a.branch_id = b.id
             WHERE {$where}
             ORDER BY a.clock_in DESC
-            LIMIT %d OFFSET %d";
-
-        $query_args = array_merge($prepare_args, [$args['per_page'], $offset]);
-        $results = $wpdb->get_results($wpdb->prepare($query, $query_args));
+            LIMIT %d OFFSET %d",
+            array_merge($prepare_args, [$args['per_page'], $offset])
+        ));
 
         $helpers = new Obydullah_ERP_Helpers();
         if ($results) {
@@ -306,15 +306,23 @@ class Obydullah_ERP_Attendance
             $prepare_args[] = $branch_id;
         }
 
-        $query = "SELECT s.*, b.name AS branch_name
-            FROM {$this->shifts_table} s
-            LEFT JOIN {$wpdb->prefix}erp_branches b ON s.branch_id = b.id
-            WHERE {$where} ORDER BY s.start_time";
         if (!empty($prepare_args)) {
-            $query = $wpdb->prepare($query, $prepare_args);
+            return $wpdb->get_results($wpdb->prepare(
+                "SELECT s.*, b.name AS branch_name
+                FROM {$this->shifts_table} s
+                LEFT JOIN {$wpdb->prefix}erp_branches b ON s.branch_id = b.id
+                WHERE {$where} ORDER BY s.start_time",
+                $prepare_args
+            )) ?: [];
+        } else {
+            return $wpdb->get_results($wpdb->prepare(
+                "SELECT s.*, b.name AS branch_name
+                FROM {$this->shifts_table} s
+                LEFT JOIN {$wpdb->prefix}erp_branches b ON s.branch_id = b.id
+                WHERE 1 = %d ORDER BY s.start_time",
+                1
+            )) ?: [];
         }
-
-        return $wpdb->get_results($query) ?: [];
     }
 
     public function save_shift($data)

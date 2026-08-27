@@ -191,11 +191,11 @@ class Obydullah_ERP_Branches
 
         $offset = ($args['page'] - 1) * $args['per_page'];
 
-        $count_query = "SELECT COUNT(*) FROM {$this->table} WHERE {$where}";
         if (!empty($prepare_args)) {
-            $count_query = $wpdb->prepare($count_query, $prepare_args);
+            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} WHERE {$where}", $prepare_args)));
+        } else {
+            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} WHERE 1 = %d", 1)));
         }
-        $total = intval($wpdb->get_var($count_query));
 
         $orderby_map = [
             'name' => 'name',
@@ -205,9 +205,10 @@ class Obydullah_ERP_Branches
         $orderby = $orderby_map[$args['orderby']] ?? 'name';
         $order = strtoupper($args['order']) === 'DESC' ? 'DESC' : 'ASC';
 
-        $query = "SELECT * FROM {$this->table} WHERE {$where} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
-        $query_args = array_merge($prepare_args, [$args['per_page'], $offset]);
-        $results = $wpdb->get_results($wpdb->prepare($query, $query_args));
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$this->table} WHERE {$where} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d",
+            array_merge($prepare_args, [$args['per_page'], $offset])
+        ));
 
         return [
             'branches'     => $results ?: [],
@@ -421,19 +422,20 @@ class Obydullah_ERP_Branches
 
         $offset = ($args['page'] - 1) * $args['per_page'];
 
-        $count_query = "SELECT COUNT(*) FROM {$stock_table} bs LEFT JOIN {$wpdb->posts} p ON bs.product_id = p.ID WHERE {$where}";
-        $count_query = $wpdb->prepare($count_query, $prepare_args);
-        $total = intval($wpdb->get_var($count_query));
+        $total = intval($wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$stock_table} bs LEFT JOIN {$wpdb->posts} p ON bs.product_id = p.ID WHERE {$where}",
+            $prepare_args
+        )));
 
-        $query = "SELECT bs.*, p.post_title as product_name
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT bs.*, p.post_title as product_name
             FROM {$stock_table} bs
             LEFT JOIN {$wpdb->posts} p ON bs.product_id = p.ID
             WHERE {$where}
             ORDER BY p.post_title ASC
-            LIMIT %d OFFSET %d";
-
-        $query_args = array_merge($prepare_args, [$args['per_page'], $offset]);
-        $results = $wpdb->get_results($wpdb->prepare($query, $query_args));
+            LIMIT %d OFFSET %d",
+            array_merge($prepare_args, [$args['per_page'], $offset])
+        ));
 
         return [
             'stock'        => $results ?: [],

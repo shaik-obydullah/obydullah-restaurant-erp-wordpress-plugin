@@ -19,22 +19,15 @@ class Obydullah_ERP_Sales_Reports
     {
         global $wpdb;
 
-        $from      = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : date('Y-m-01');
-        $to        = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : date('Y-m-d');
+        $from      = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : gmdate('Y-m-01');
+        $to        = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
         $branch_id = intval($branch_id);
-
-        $entries  = $wpdb->prefix . 'erp_journal_entries';
-        $lines    = $wpdb->prefix . 'erp_journal_lines';
-        $accounts = $wpdb->prefix . 'erp_accounts';
-        $purchases = $wpdb->prefix . 'erp_purchase_orders';
-
-        $where_branch = $branch_id > 0 ? $wpdb->prepare(' AND po.branch_id = %d', $branch_id) : '';
 
         $revenue = $wpdb->get_var($wpdb->prepare(
             "SELECT COALESCE(SUM(jl.credit), 0)
-            FROM {$lines} jl
-            JOIN {$entries} je ON jl.entry_id = je.id
-            JOIN {$accounts} ja ON jl.account_id = ja.id
+            FROM {$wpdb->prefix}erp_journal_lines jl
+            JOIN {$wpdb->prefix}erp_journal_entries je ON jl.entry_id = je.id
+            JOIN {$wpdb->prefix}erp_accounts ja ON jl.account_id = ja.id
             WHERE ja.type = 'revenue'
             AND je.date BETWEEN %s AND %s
             AND je.is_posted = 1",
@@ -43,30 +36,40 @@ class Obydullah_ERP_Sales_Reports
 
         $cogs = $wpdb->get_var($wpdb->prepare(
             "SELECT COALESCE(SUM(jl.debit), 0)
-            FROM {$lines} jl
-            JOIN {$entries} je ON jl.entry_id = je.id
-            JOIN {$accounts} ja ON jl.account_id = ja.id
+            FROM {$wpdb->prefix}erp_journal_lines jl
+            JOIN {$wpdb->prefix}erp_journal_entries je ON jl.entry_id = je.id
+            JOIN {$wpdb->prefix}erp_accounts ja ON jl.account_id = ja.id
             WHERE ja.code = '5000'
             AND je.date BETWEEN %s AND %s
             AND je.is_posted = 1",
             $from, $to
         ));
 
-        $purchase_data = $wpdb->get_results($wpdb->prepare(
-            "SELECT po.status, COUNT(*) as count, COALESCE(SUM(po.total), 0) as total
-            FROM {$purchases} po
-            WHERE po.created_at BETWEEN %s AND %s {$where_branch}
-            GROUP BY po.status",
-            $from . ' 00:00:00', $to . ' 23:59:59'
-        ));
+        if ($branch_id > 0) {
+            $purchase_data = $wpdb->get_results($wpdb->prepare(
+                "SELECT po.status, COUNT(*) as count, COALESCE(SUM(po.total), 0) as total
+                FROM {$wpdb->prefix}erp_purchase_orders po
+                WHERE po.created_at BETWEEN %s AND %s AND po.branch_id = %d
+                GROUP BY po.status",
+                $from . ' 00:00:00', $to . ' 23:59:59', $branch_id
+            ));
+        } else {
+            $purchase_data = $wpdb->get_results($wpdb->prepare(
+                "SELECT po.status, COUNT(*) as count, COALESCE(SUM(po.total), 0) as total
+                FROM {$wpdb->prefix}erp_purchase_orders po
+                WHERE po.created_at BETWEEN %s AND %s
+                GROUP BY po.status",
+                $from . ' 00:00:00', $to . ' 23:59:59'
+            ));
+        }
 
         $monthly = $wpdb->get_results($wpdb->prepare(
-            "SELECT DATE_FORMAT(je.date, '%Y-%m') as month,
+            "SELECT DATE_FORMAT(je.date, '%%Y-%%m') as month,
                     COALESCE(SUM(CASE WHEN ja.type = 'revenue' THEN jl.credit ELSE 0 END), 0) as revenue,
                     COALESCE(SUM(CASE WHEN ja.code = '5000' THEN jl.debit ELSE 0 END), 0) as cogs
-            FROM {$entries} je
-            JOIN {$lines} jl ON jl.entry_id = je.id
-            JOIN {$accounts} ja ON jl.account_id = ja.id
+            FROM {$wpdb->prefix}erp_journal_entries je
+            JOIN {$wpdb->prefix}erp_journal_lines jl ON jl.entry_id = je.id
+            JOIN {$wpdb->prefix}erp_accounts ja ON jl.account_id = ja.id
             WHERE je.date BETWEEN %s AND %s AND je.is_posted = 1
             GROUP BY month ORDER BY month",
             $from, $to

@@ -69,12 +69,12 @@ class Obydullah_ERP_Reports
                     <div class="filter-group">
                         <label><?php esc_html_e('From', 'obydullah-restaurant-erp'); ?></label>
                         <input type="date" id="report-date-from" class="regular-text"
-                            value="<?php echo esc_attr(date('Y-m-01')); ?>">
+                            value="<?php echo esc_attr(gmdate('Y-m-01')); ?>">
                     </div>
                     <div class="filter-group">
                         <label><?php esc_html_e('To', 'obydullah-restaurant-erp'); ?></label>
                         <input type="date" id="report-date-to" class="regular-text"
-                            value="<?php echo esc_attr(date('Y-m-d')); ?>">
+                            value="<?php echo esc_attr(gmdate('Y-m-d')); ?>">
                     </div>
                     <div class="filter-group">
                         <label><?php esc_html_e('Branch', 'obydullah-restaurant-erp'); ?></label>
@@ -102,12 +102,12 @@ class Obydullah_ERP_Reports
     private function render_branch_options($selected = 0)
     {
         global $wpdb;
-        $branches = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}erp_branches WHERE is_active = 1 ORDER BY name");
+        $branches = $wpdb->get_results($wpdb->prepare("SELECT id, name FROM {$wpdb->prefix}erp_branches WHERE is_active = 1 AND 1 = %d ORDER BY name", 1));
 
         foreach ($branches as $branch) {
             printf(
                 '<option value="%d" %s>%s</option>',
-                $branch->id,
+                intval($branch->id),
                 selected($selected, $branch->id, false),
                 esc_html($branch->name)
             );
@@ -228,8 +228,8 @@ class Obydullah_ERP_Reports
             $total_expenses += floatval($e['total_debit']) - floatval($e['total_credit']);
         }
 
-        $period_from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : date('Y-m-01');
-        $period_to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : date('Y-m-d');
+        $period_from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : gmdate('Y-m-01');
+        $period_to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
 
         return [
             'period'         => ['from' => $period_from, 'to' => $period_to],
@@ -258,21 +258,27 @@ class Obydullah_ERP_Reports
         list($from, $to) = $this->get_date_range();
         $branch_id = $this->get_branch_filter();
 
-        $emp_table    = $wpdb->prefix . 'erp_employees';
-        $attend_table = $wpdb->prefix . 'erp_attendance';
-        $prep_table   = $wpdb->prefix . 'erp_prep_tracking';
-
-        $where_branch = $branch_id > 0 ? $wpdb->prepare('AND e.branch_id = %d', $branch_id) : '';
-
-        $query = "SELECT e.id, e.employee_code, e.branch_id, u.display_name AS display_name, b.name AS branch_name
-            FROM {$emp_table} e
-            LEFT JOIN {$wpdb->users} u ON e.user_id = u.ID
-            LEFT JOIN {$wpdb->prefix}erp_branches b ON e.branch_id = b.id
-            WHERE e.is_active = 1 {$where_branch}
-            ORDER BY display_name ASC";
-
-        $query = $where_branch ? $wpdb->prepare($query, $branch_id) : $query;
-        $employees = $wpdb->get_results($query) ?: [];
+        if ($branch_id > 0) {
+            $employees = $wpdb->get_results($wpdb->prepare(
+                "SELECT e.id, e.employee_code, e.branch_id, u.display_name AS display_name, b.name AS branch_name
+                FROM {$wpdb->prefix}erp_employees e
+                LEFT JOIN {$wpdb->users} u ON e.user_id = u.ID
+                LEFT JOIN {$wpdb->prefix}erp_branches b ON e.branch_id = b.id
+                WHERE e.is_active = 1 AND e.branch_id = %d
+                ORDER BY display_name ASC",
+                $branch_id
+            )) ?: [];
+        } else {
+            $employees = $wpdb->get_results($wpdb->prepare(
+                "SELECT e.id, e.employee_code, e.branch_id, u.display_name AS display_name, b.name AS branch_name
+                FROM {$wpdb->prefix}erp_employees e
+                LEFT JOIN {$wpdb->users} u ON e.user_id = u.ID
+                LEFT JOIN {$wpdb->prefix}erp_branches b ON e.branch_id = b.id
+                WHERE e.is_active = 1 AND 1 = %d
+                ORDER BY display_name ASC",
+                1
+            )) ?: [];
+        }
 
         $results = [];
 
@@ -280,7 +286,7 @@ class Obydullah_ERP_Reports
             $attend = $wpdb->get_row($wpdb->prepare(
                 "SELECT COUNT(*) as days_worked,
                         COALESCE(SUM(TIMESTAMPDIFF(MINUTE, clock_in, COALESCE(clock_out, NOW()))), 0) as total_minutes
-                FROM {$attend_table}
+                FROM {$wpdb->prefix}erp_attendance
                 WHERE employee_id = %d AND DATE(clock_in) BETWEEN %s AND %s",
                 $emp->id, $from, $to
             ));
@@ -288,7 +294,7 @@ class Obydullah_ERP_Reports
             $prep = $wpdb->get_row($wpdb->prepare(
                 "SELECT COUNT(*) as tasks_completed,
                         COALESCE(AVG(actual_time_minutes), 0) as avg_time
-                FROM {$prep_table}
+                FROM {$wpdb->prefix}erp_prep_tracking
                 WHERE employee_id = %d AND completed_at IS NOT NULL
                 AND DATE(started_at) BETWEEN %s AND %s",
                 $emp->id, $from, $to

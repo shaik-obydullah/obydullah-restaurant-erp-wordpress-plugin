@@ -166,7 +166,7 @@ class Obydullah_ERP_Chart_Accounts
         foreach ($accounts as $acc) {
             printf(
                 '<option value="%d" %s>%s - %s</option>',
-                $acc->id,
+                intval($acc->id),
                 selected($selected, $acc->id, false),
                 esc_html($acc->code),
                 esc_html($acc->name)
@@ -194,18 +194,22 @@ class Obydullah_ERP_Chart_Accounts
             $prepare_args[] = intval($args['active']);
         }
 
-        $query = "SELECT * FROM {$this->table} WHERE {$where} ORDER BY code ASC";
-
-        if (!empty($prepare_args)) {
-            $query = $wpdb->prepare($query, $prepare_args);
-        }
-
         if ($args['per_page'] > 0) {
             $offset = (($args['page'] ?? 1) - 1) * $args['per_page'];
-            $query .= $wpdb->prepare(" LIMIT %d OFFSET %d", $args['per_page'], $offset);
+            if (!empty($prepare_args)) {
+                $results = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$this->table} WHERE {$where} ORDER BY code ASC LIMIT " . intval($args['per_page']) . " OFFSET " . intval($offset), $prepare_args));
+            } else {
+                $results = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$this->table} WHERE 1 = %d ORDER BY code ASC LIMIT " . intval($args['per_page']) . " OFFSET " . intval($offset), 1));
+            }
+        } else {
+            if (!empty($prepare_args)) {
+                $results = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$this->table} WHERE {$where} ORDER BY code ASC", $prepare_args));
+            } else {
+                $results = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$this->table} WHERE 1 = %d ORDER BY code ASC", 1));
+            }
         }
 
-        return $wpdb->get_results($query) ?: [];
+        return $results ?: [];
     }
 
     public function get_account($id)
@@ -278,13 +282,10 @@ class Obydullah_ERP_Chart_Accounts
     {
         global $wpdb;
 
-        $lines = $wpdb->prefix . 'erp_journal_lines';
-        $entries = $wpdb->prefix . 'erp_journal_entries';
-
         $result = $wpdb->get_row($wpdb->prepare(
             "SELECT COALESCE(SUM(jl.debit), 0) as total_debit, COALESCE(SUM(jl.credit), 0) as total_credit
-            FROM {$lines} jl
-            JOIN {$entries} je ON jl.entry_id = je.id
+            FROM {$wpdb->prefix}erp_journal_lines jl
+            JOIN {$wpdb->prefix}erp_journal_entries je ON jl.entry_id = je.id
             WHERE jl.account_id = %d AND je.is_posted = 1",
             intval($account_id)
         ));

@@ -52,12 +52,12 @@ class Obydullah_ERP_Ledger
                     <div class="filter-group">
                         <label><?php esc_html_e('From', 'obydullah-restaurant-erp'); ?></label>
                         <input type="date" id="ledger-date-from" class="regular-text"
-                            value="<?php echo esc_attr(date('Y-m-01')); ?>">
+                            value="<?php echo esc_attr(gmdate('Y-m-01')); ?>">
                     </div>
                     <div class="filter-group">
                         <label><?php esc_html_e('To', 'obydullah-restaurant-erp'); ?></label>
                         <input type="date" id="ledger-date-to" class="regular-text"
-                            value="<?php echo esc_attr(date('Y-m-d')); ?>">
+                            value="<?php echo esc_attr(gmdate('Y-m-d')); ?>">
                     </div>
                     <div class="filter-group">
                         <label><?php esc_html_e('Account', 'obydullah-restaurant-erp'); ?></label>
@@ -87,8 +87,8 @@ class Obydullah_ERP_Ledger
     {
         global $wpdb;
 
-        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : date('Y-m-01');
-        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : date('Y-m-d');
+        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : gmdate('Y-m-01');
+        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
 
         $where   = " AND je.is_posted = 1 AND je.date BETWEEN %s AND %s";
         $prepare = [$from, $to];
@@ -98,16 +98,16 @@ class Obydullah_ERP_Ledger
             $prepare[] = $account_id;
         }
 
-        $query = "SELECT jl.*, je.date AS entry_date, je.description AS entry_description,
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT jl.*, je.date AS entry_date, je.description AS entry_description,
                 je.reference_type, je.reference_id, a.code AS account_code, a.name AS account_name, a.type AS account_type
             FROM {$this->table_lines} jl
             INNER JOIN {$this->table_entries} je ON jl.entry_id = je.id
             INNER JOIN {$this->table_accounts} a ON jl.account_id = a.id
             WHERE 1=1{$where}
-            ORDER BY je.date ASC, je.id ASC, jl.id ASC";
-
-        $query = $wpdb->prepare($query, $prepare);
-        $rows  = $wpdb->get_results($query) ?: [];
+            ORDER BY je.date ASC, je.id ASC, jl.id ASC",
+            $prepare
+        )) ?: [];
 
         // Opening balances grouped by account (everything posted before $from).
         $opening = $this->get_opening_balances($from, $account_id);
@@ -182,14 +182,14 @@ class Obydullah_ERP_Ledger
             $prepare[] = $account_id;
         }
 
-        $query = "SELECT jl.account_id, SUM(jl.debit) AS debit, SUM(jl.credit) AS credit
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT jl.account_id, SUM(jl.debit) AS debit, SUM(jl.credit) AS credit
             FROM {$this->table_lines} jl
             INNER JOIN {$this->table_entries} je ON jl.entry_id = je.id
             WHERE 1=1{$where}
-            GROUP BY jl.account_id";
-
-        $query = $wpdb->prepare($query, $prepare);
-        $rows  = $wpdb->get_results($query) ?: [];
+            GROUP BY jl.account_id",
+            $prepare
+        )) ?: [];
 
         $balances = [];
         foreach ($rows as $row) {

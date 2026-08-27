@@ -249,22 +249,22 @@ class Obydullah_ERP_Employees
 
         $offset = ($args['page'] - 1) * $args['per_page'];
 
-        $count_query = "SELECT COUNT(*) FROM {$this->table} e WHERE {$where}";
         if (!empty($prepare_args)) {
-            $count_query = $wpdb->prepare($count_query, $prepare_args);
+            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} e WHERE {$where}", $prepare_args)));
+        } else {
+            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} e WHERE 1 = %d", 1)));
         }
-        $total = intval($wpdb->get_var($count_query));
 
-        $query = "SELECT e.*, b.name as branch_name, u.display_name as user_display_name
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT e.*, b.name as branch_name, u.display_name as user_display_name
             FROM {$this->table} e
             LEFT JOIN {$wpdb->prefix}erp_branches b ON e.branch_id = b.id
             LEFT JOIN {$wpdb->users} u ON e.user_id = u.ID
             WHERE {$where}
             ORDER BY e.employee_code ASC
-            LIMIT %d OFFSET %d";
-
-        $query_args = array_merge($prepare_args, [$args['per_page'], $offset]);
-        $results = $wpdb->get_results($wpdb->prepare($query, $query_args));
+            LIMIT %d OFFSET %d",
+            array_merge($prepare_args, [$args['per_page'], $offset])
+        ));
 
         return [
             'employees'    => $results ?: [],

@@ -19,8 +19,8 @@ class Obydullah_ERP_Branch_Reports
     {
         global $wpdb;
 
-        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : date('Y-m-01');
-        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : date('Y-m-d');
+        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : gmdate('Y-m-01');
+        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
 
         $branches = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}erp_branches WHERE is_active = 1 ORDER BY name");
         $comparison = [];

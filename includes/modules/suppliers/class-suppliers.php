@@ -180,15 +180,16 @@ class Obydullah_ERP_Suppliers
 
         $offset = ($args['page'] - 1) * $args['per_page'];
 
-        $count_query = "SELECT COUNT(*) FROM {$this->table} WHERE {$where}";
         if (!empty($prepare_args)) {
-            $count_query = $wpdb->prepare($count_query, $prepare_args);
+            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} WHERE {$where}", $prepare_args)));
+        } else {
+            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} WHERE 1 = %d", 1)));
         }
-        $total = intval($wpdb->get_var($count_query));
 
-        $query = "SELECT * FROM {$this->table} WHERE {$where} ORDER BY name ASC LIMIT %d OFFSET %d";
-        $query_args = array_merge($prepare_args, [$args['per_page'], $offset]);
-        $results = $wpdb->get_results($wpdb->prepare($query, $query_args));
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$this->table} WHERE {$where} ORDER BY name ASC LIMIT %d OFFSET %d",
+            array_merge($prepare_args, [$args['per_page'], $offset])
+        ));
 
         return [
             'suppliers'    => $results ?: [],

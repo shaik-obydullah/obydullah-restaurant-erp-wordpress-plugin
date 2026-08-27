@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 <head>
     <meta charset="<?php bloginfo('charset'); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo esc_html($report_title); ?></title>
+    <title><?php echo esc_html($orerp_report_title); ?></title>
     <style>
         body { font-family: Georgia, 'Times New Roman', serif; color: #222; margin: 0; padding: 30px; }
         .report-header { border-bottom: 3px double #333; padding-bottom: 10px; margin-bottom: 20px; }
@@ -39,7 +39,7 @@ if (!defined('ABSPATH')) {
 </head>
 <body>
     <div class="report-header">
-        <h1><?php echo esc_html($report_title); ?></h1>
+        <h1><?php echo esc_html($orerp_report_title); ?></h1>
         <div class="report-meta">
             <?php echo esc_html(get_bloginfo('name')); ?>
             <?php if (!empty($data['period'])): ?>

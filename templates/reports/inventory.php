@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$report_title = __('Inventory Report', 'obydullah-restaurant-erp');
+$orerp_report_title = __('Inventory Report', 'obydullah-restaurant-erp');
 include ORERP_PATH . 'templates/reports/header.php';
 ?>
 <div class="summary-grid">

@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$report_title = __('Sales Report', 'obydullah-restaurant-erp');
+$orerp_report_title = __('Sales Report', 'obydullah-restaurant-erp');
 include ORERP_PATH . 'templates/reports/header.php';
 ?>
 <div class="summary-grid">
@@ -42,8 +42,8 @@ include ORERP_PATH . 'templates/reports/header.php';
 <table>
     <thead><tr><th><?php esc_html_e('Status', 'obydullah-restaurant-erp'); ?></th><th class="text-right"><?php esc_html_e('Count', 'obydullah-restaurant-erp'); ?></th><th class="text-right"><?php esc_html_e('Total', 'obydullah-restaurant-erp'); ?></th></tr></thead>
     <tbody>
-    <?php foreach ($data['purchases'] as $p): ?>
-        <tr><td><?php echo esc_html($p->status); ?></td><td class="text-right"><?php echo esc_html($p->count); ?></td><td class="text-right"><?php echo esc_html(Obydullah_ERP_Helpers::format_currency($p->total)); ?></td></tr>
+    <?php foreach ($data['purchases'] as $orerp_p): ?>
+        <tr><td><?php echo esc_html($orerp_p->status); ?></td><td class="text-right"><?php echo esc_html($orerp_p->count); ?></td><td class="text-right"><?php echo esc_html(Obydullah_ERP_Helpers::format_currency($orerp_p->total)); ?></td></tr>
     <?php endforeach; ?>
     </tbody>
 </table>

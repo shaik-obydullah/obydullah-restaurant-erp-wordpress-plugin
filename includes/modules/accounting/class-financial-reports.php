@@ -52,19 +52,29 @@ class Obydullah_ERP_Financial_Reports
             $prepare[] = $to;
         }
 
-        $query = "SELECT jl.account_id,
-                COALESCE(SUM(jl.debit), 0) AS debit,
-                COALESCE(SUM(jl.credit), 0) AS credit
-            FROM {$this->table_lines} jl
-            INNER JOIN {$this->table_entries} je ON jl.entry_id = je.id
-            WHERE 1=1{$where}
-            GROUP BY jl.account_id";
-
-        if ($prepare) {
-            $query = $wpdb->prepare($query, $prepare);
+        if (!empty($prepare)) {
+            $rows = $wpdb->get_results($wpdb->prepare(
+                "SELECT jl.account_id,
+                    COALESCE(SUM(jl.debit), 0) AS debit,
+                    COALESCE(SUM(jl.credit), 0) AS credit
+                FROM {$this->table_lines} jl
+                INNER JOIN {$this->table_entries} je ON jl.entry_id = je.id
+                WHERE 1=1{$where}
+                GROUP BY jl.account_id",
+                $prepare
+            )) ?: [];
+        } else {
+            $rows = $wpdb->get_results($wpdb->prepare(
+                "SELECT jl.account_id,
+                    COALESCE(SUM(jl.debit), 0) AS debit,
+                    COALESCE(SUM(jl.credit), 0) AS credit
+                FROM {$this->table_lines} jl
+                INNER JOIN {$this->table_entries} je ON jl.entry_id = je.id
+                WHERE 1=1 AND 1 = %d
+                GROUP BY jl.account_id",
+                1
+            )) ?: [];
         }
-
-        $rows = $wpdb->get_results($query) ?: [];
 
         $totals = [];
         foreach ($rows as $row) {
@@ -89,7 +99,7 @@ class Obydullah_ERP_Financial_Reports
         global $wpdb;
 
         $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : '1970-01-01';
-        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : date('Y-m-d');
+        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
 
         $totals = $this->get_posted_totals($from, $to);
 
@@ -145,12 +155,12 @@ class Obydullah_ERP_Financial_Reports
     {
         global $wpdb;
 
-        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : date('Y-m-01');
-        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : date('Y-m-d');
+        $from = Obydullah_ERP_Helpers::is_valid_date($from) ? $from : gmdate('Y-m-01');
+        $to   = Obydullah_ERP_Helpers::is_valid_date($to) ? $to : gmdate('Y-m-d');
 
         $totals = $this->get_posted_totals($from, $to);
 
-        $accounts = $wpdb->get_results("SELECT id, code, name, type FROM {$this->table_accounts} WHERE is_active = 1 ORDER BY code") ?: [];
+        $accounts = $wpdb->get_results($wpdb->prepare("SELECT id, code, name, type FROM {$this->table_accounts} WHERE is_active = 1 AND 1 = %d ORDER BY code", 1)) ?: [];
 
         $result = [];
         foreach ($accounts as $acc) {
@@ -178,7 +188,7 @@ class Obydullah_ERP_Financial_Reports
     {
         global $wpdb;
 
-        $as_of = Obydullah_ERP_Helpers::is_valid_date($as_of) ? $as_of : date('Y-m-d');
+        $as_of = Obydullah_ERP_Helpers::is_valid_date($as_of) ? $as_of : gmdate('Y-m-d');
 
         $totals = $this->get_posted_totals('', $as_of);
 

@@ -15,8 +15,8 @@ $orerp_core_files = [
     'class-erp-integration.php',
 ];
 
-foreach ($orerp_core_files as $file) {
-    $path = ORERP_PATH . 'includes/core/' . $file;
+foreach ($orerp_core_files as $orerp_file) {
+    $path = ORERP_PATH . 'includes/core/' . $orerp_file;
     if (file_exists($path)) {
         require_once $path;
     }

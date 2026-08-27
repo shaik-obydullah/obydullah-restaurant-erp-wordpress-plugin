@@ -107,7 +107,7 @@ class Obydullah_ERP_Purchase_Orders
                                 global $wpdb;
                                 $branches = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}erp_branches WHERE is_active = 1 ORDER BY name");
                                 foreach ($branches as $b) {
-                                    printf('<option value="%d" %s>%s</option>', $b->id, selected($po->branch_id ?? '', $b->id, false), esc_html($b->name));
+                                    printf('<option value="%s" %s>%s</option>', esc_attr($b->id), selected($po->branch_id ?? '', $b->id, false), esc_html($b->name));
                                 }
                                 ?>
                             </select>
@@ -122,7 +122,7 @@ class Obydullah_ERP_Purchase_Orders
                                 <?php
                                 $suppliers = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}erp_suppliers WHERE is_active = 1 ORDER BY name");
                                 foreach ($suppliers as $s) {
-                                    printf('<option value="%d" %s>%s</option>', $s->id, selected($po->supplier_id ?? '', $s->id, false), esc_html($s->name));
+                                    printf('<option value="%s" %s>%s</option>', esc_attr($s->id), selected($po->supplier_id ?? '', $s->id, false), esc_html($s->name));
                                 }
                                 ?>
                             </select>
@@ -226,22 +226,22 @@ class Obydullah_ERP_Purchase_Orders
 
         $offset = ($args['page'] - 1) * $args['per_page'];
 
-        $count_query = "SELECT COUNT(*) FROM {$this->table} po WHERE {$where}";
         if (!empty($prepare_args)) {
-            $count_query = $wpdb->prepare($count_query, $prepare_args);
+            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} po WHERE {$where}", $prepare_args)));
+        } else {
+            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} po WHERE 1 = %d", 1)));
         }
-        $total = intval($wpdb->get_var($count_query));
 
-        $query = "SELECT po.*, s.name as supplier_name, b.name as branch_name
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT po.*, s.name as supplier_name, b.name as branch_name
             FROM {$this->table} po
             LEFT JOIN {$wpdb->prefix}erp_suppliers s ON po.supplier_id = s.id
             LEFT JOIN {$wpdb->prefix}erp_branches b ON po.branch_id = b.id
             WHERE {$where}
             ORDER BY po.created_at DESC
-            LIMIT %d OFFSET %d";
-
-        $query_args = array_merge($prepare_args, [$args['per_page'], $offset]);
-        $results = $wpdb->get_results($wpdb->prepare($query, $query_args));
+            LIMIT %d OFFSET %d",
+            array_merge($prepare_args, [$args['per_page'], $offset])
+        ));
 
         $helpers = new Obydullah_ERP_Helpers();
         foreach ($results as &$row) {

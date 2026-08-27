@@ -13,10 +13,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$kds_branch_id = isset($_GET['branch_id']) ? intval($_GET['branch_id']) : 0;
-$kds_nonce = wp_create_nonce('orerp_kitchen');
-$kds_branch_nonce = wp_create_nonce('orerp_branches');
-$kds_ajax  = admin_url('admin-ajax.php');
+$orerp_kds_branch_id = isset($_GET['branch_id']) ? intval($_GET['branch_id']) : 0;
+$orerp_kds_nonce = wp_create_nonce('orerp_kitchen');
+$orerp_kds_branch_nonce = wp_create_nonce('orerp_branches');
+$orerp_kds_ajax  = admin_url('admin-ajax.php');
 ?>
 <div id="orerp-kds" class="orerp-kds">
     <style>
@@ -73,14 +73,14 @@ $kds_ajax  = admin_url('admin-ajax.php');
 <script>
 (function () {
     var KDS = {
-        branchId: <?php echo intval($kds_branch_id); ?>,
+        branchId: <?php echo intval($orerp_kds_branch_id); ?>,
         state: {},
         timer: null,
         el: function (id) { return document.getElementById(id); },
         loadBranches: function () {
             var self = this;
             var req = new XMLHttpRequest();
-            req.open('GET', '<?php echo esc_url($kds_ajax); ?>?action=orerp_get_branches&nonce=' + encodeURIComponent('<?php echo esc_js($kds_branch_nonce); ?>'));
+            req.open('GET', '<?php echo esc_url($orerp_kds_ajax); ?>?action=orerp_get_branches&nonce=' + encodeURIComponent('<?php echo esc_js($orerp_kds_branch_nonce); ?>'));
             req.onload = function () {
                 var res = JSON.parse(req.responseText);
                 if (!res.success) return;
@@ -107,8 +107,8 @@ $kds_ajax  = admin_url('admin-ajax.php');
         load: function () {
             var self = this;
             var branch = this.el('orerp-kds-branch').value || this.branchId;
-            var url = '<?php echo esc_url($kds_ajax); ?>?action=orerp_get_kitchen_orders&nonce=' +
-                encodeURIComponent('<?php echo esc_js($kds_nonce); ?>') +
+            var url = '<?php echo esc_url($orerp_kds_ajax); ?>?action=orerp_get_kitchen_orders&nonce=' +
+                encodeURIComponent('<?php echo esc_js($orerp_kds_nonce); ?>') +
                 '&per_page=100&page=1&branch_id=' + branch + '&status=&date=' +
                 encodeURIComponent(new Date().toISOString().slice(0, 10));
             var req = new XMLHttpRequest();
@@ -160,10 +160,10 @@ $kds_ajax  = admin_url('admin-ajax.php');
             Array.prototype.forEach.call(document.querySelectorAll('.orerp-kds__btn'), function (btn) {
                 btn.onclick = function () {
                     var card = this.closest('.orerp-kds__card');
-                    var body = 'action=orerp_update_order_status&nonce=' + encodeURIComponent('<?php echo esc_js($kds_nonce); ?>') +
+                    var body = 'action=orerp_update_order_status&nonce=' + encodeURIComponent('<?php echo esc_js($orerp_kds_nonce); ?>') +
                         '&order_id=' + card.getAttribute('data-id') + '&status=' + this.getAttribute('data-next');
                     var req = new XMLHttpRequest();
-                    req.open('POST', '<?php echo esc_url($kds_ajax); ?>');
+                    req.open('POST', '<?php echo esc_url($orerp_kds_ajax); ?>');
                     req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                     req.onload = function () {
                         var res = JSON.parse(req.responseText);
