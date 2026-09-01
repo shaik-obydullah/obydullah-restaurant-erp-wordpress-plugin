@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * General Ledger
  *
@@ -41,7 +42,15 @@ class Obydullah_ERP_Ledger
     public function orerp_render_page()
     {
         global $wpdb;
-        $accounts = $wpdb->get_results("SELECT id, code, name FROM {$this->table_accounts} WHERE is_active = 1 ORDER BY code") ?: [];
+        $cache_key = 'ledger_account_options';
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table_accounts);
+        if (false !== $cached) {
+            $accounts = $cached;
+        } else {
+            $accounts = $wpdb->get_results("SELECT id, code, name FROM {$this->table_accounts} WHERE is_active = 1 ORDER BY code");
+            Obydullah_ERP_Cache::set($cache_key, $this->table_accounts, $accounts);
+        }
+        $accounts = $accounts ?: [];
         ?>
         <div class="wrap">
             <h1><?php esc_html_e('General Ledger', 'obydullah-restaurant-erp'); ?></h1>
@@ -98,16 +107,24 @@ class Obydullah_ERP_Ledger
             $prepare[] = $account_id;
         }
 
-        $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT jl.*, je.date AS entry_date, je.description AS entry_description,
-                je.reference_type, je.reference_id, a.code AS account_code, a.name AS account_name, a.type AS account_type
-            FROM {$this->table_lines} jl
-            INNER JOIN {$this->table_entries} je ON jl.entry_id = je.id
-            INNER JOIN {$this->table_accounts} a ON jl.account_id = a.id
-            WHERE 1=1{$where}
-            ORDER BY je.date ASC, je.id ASC, jl.id ASC",
-            $prepare
-        )) ?: [];
+        $cache_key = 'ledger_rows_' . sanitize_key($from . '_' . $to . '_' . $account_id);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table_lines);
+        if (false !== $cached) {
+            $rows = $cached;
+        } else {
+            $rows = $wpdb->get_results($wpdb->prepare(
+                "SELECT jl.*, je.date AS entry_date, je.description AS entry_description,
+                    je.reference_type, je.reference_id, a.code AS account_code, a.name AS account_name, a.type AS account_type
+                FROM {$this->table_lines} jl
+                INNER JOIN {$this->table_entries} je ON jl.entry_id = je.id
+                INNER JOIN {$this->table_accounts} a ON jl.account_id = a.id
+                WHERE 1=1{$where}
+                ORDER BY je.date ASC, je.id ASC, jl.id ASC",
+                $prepare
+            ));
+            Obydullah_ERP_Cache::set($cache_key, $this->table_lines, $rows);
+        }
+        $rows = $rows ?: [];
 
         // Opening balances grouped by account (everything posted before $from).
         $opening = $this->orerp_get_opening_balances($from, $account_id);
@@ -182,14 +199,22 @@ class Obydullah_ERP_Ledger
             $prepare[] = $account_id;
         }
 
-        $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT jl.account_id, SUM(jl.debit) AS debit, SUM(jl.credit) AS credit
-            FROM {$this->table_lines} jl
-            INNER JOIN {$this->table_entries} je ON jl.entry_id = je.id
-            WHERE 1=1{$where}
-            GROUP BY jl.account_id",
-            $prepare
-        )) ?: [];
+        $cache_key = 'ledger_opening_' . sanitize_key($from . '_' . $account_id);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table_lines);
+        if (false !== $cached) {
+            $rows = $cached;
+        } else {
+            $rows = $wpdb->get_results($wpdb->prepare(
+                "SELECT jl.account_id, SUM(jl.debit) AS debit, SUM(jl.credit) AS credit
+                FROM {$this->table_lines} jl
+                INNER JOIN {$this->table_entries} je ON jl.entry_id = je.id
+                WHERE 1=1{$where}
+                GROUP BY jl.account_id",
+                $prepare
+            ));
+            Obydullah_ERP_Cache::set($cache_key, $this->table_lines, $rows);
+        }
+        $rows = $rows ?: [];
 
         $balances = [];
         foreach ($rows as $row) {

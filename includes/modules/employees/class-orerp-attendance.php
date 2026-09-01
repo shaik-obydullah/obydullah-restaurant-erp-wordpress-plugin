@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Employee Attendance & Shifts
  *
@@ -38,8 +39,24 @@ class Obydullah_ERP_Attendance
     {
         global $wpdb;
 
-        $employees = $wpdb->get_results("SELECT id, employee_code, user_id FROM {$this->employees_table} WHERE is_active = 1 ORDER BY employee_code") ?: [];
-        $branches = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}erp_branches WHERE is_active = 1 ORDER BY name") ?: [];
+        $emp_cache_key = 'attendance_employees_active';
+        $emp_cached = Obydullah_ERP_Cache::get($emp_cache_key, $this->employees_table);
+        if (false !== $emp_cached) {
+            $employees = $emp_cached;
+        } else {
+            $employees = $wpdb->get_results("SELECT id, employee_code, user_id FROM {$this->employees_table} WHERE is_active = 1 ORDER BY employee_code") ?: [];
+            Obydullah_ERP_Cache::set($emp_cache_key, $this->employees_table, $employees);
+        }
+
+        $branch_table = $wpdb->prefix . 'erp_branches';
+        $branch_cache_key = 'branches_active_simple';
+        $branch_cached = Obydullah_ERP_Cache::get($branch_cache_key, $branch_table);
+        if (false !== $branch_cached) {
+            $branches = $branch_cached;
+        } else {
+            $branches = $wpdb->get_results("SELECT id, name FROM {$branch_table} WHERE is_active = 1 ORDER BY name") ?: [];
+            Obydullah_ERP_Cache::set($branch_cache_key, $branch_table, $branches);
+        }
         ?>
         <div class="wrap">
             <h1><?php esc_html_e('Attendance & Shifts', 'obydullah-restaurant-erp'); ?></h1>
@@ -141,6 +158,8 @@ class Obydullah_ERP_Attendance
             'orerp_clock_in'    => current_time('mysql'),
         ]);
 
+        Obydullah_ERP_Cache::invalidate($this->attendance_table);
+
         return $wpdb->insert_id;
     }
 
@@ -164,6 +183,8 @@ class Obydullah_ERP_Attendance
             'notes'     => $notes,
         ], ['id' => $record->id]);
 
+        Obydullah_ERP_Cache::invalidate($this->attendance_table);
+
         return $record->id;
     }
 
@@ -181,6 +202,13 @@ class Obydullah_ERP_Attendance
         ];
 
         $args = wp_parse_args($args, $defaults);
+
+        $cache_key = 'attendance_list_' . $args['page'] . '_' . $args['per_page'] . '_' . $args['employee_id'] . '_' . $args['branch_id'] . '_' . $args['date_from'] . '_' . $args['date_to'];
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->attendance_table);
+        if (false !== $cached) {
+            return $cached;
+        }
+
         $where = '1=1';
         $prepare_args = [];
 
@@ -232,12 +260,15 @@ class Obydullah_ERP_Attendance
             }
         }
 
-        return [
+        $return = [
             'attendance'  => $results ?: [],
             'total'       => $total,
             'total_pages' => ceil($total / $args['per_page']),
             'current_page' => $args['page'],
         ];
+
+        Obydullah_ERP_Cache::set($cache_key, $this->attendance_table, $return);
+        return $return;
     }
 
     public function orerp_save_attendance($data)
@@ -270,13 +301,17 @@ class Obydullah_ERP_Attendance
             $id = $wpdb->insert_id;
         }
 
+        Obydullah_ERP_Cache::invalidate($this->attendance_table);
+
         return $result !== false ? $id : new WP_Error('save_failed', __('Failed to save attendance.', 'obydullah-restaurant-erp'));
     }
 
     public function orerp_delete_attendance($id)
     {
         global $wpdb;
-        return $wpdb->delete($this->attendance_table, ['id' => intval($id)]) !== false;
+        $result = $wpdb->delete($this->attendance_table, ['id' => intval($id)]) !== false;
+        Obydullah_ERP_Cache::invalidate($this->attendance_table);
+        return $result;
     }
 
     private function orerp_calculate_hours($clock_in, $clock_out)
@@ -298,6 +333,12 @@ class Obydullah_ERP_Attendance
     {
         global $wpdb;
 
+        $cache_key = 'shifts_list_' . intval($branch_id);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->shifts_table);
+        if (false !== $cached) {
+            return $cached;
+        }
+
         $where = '1=1';
         $prepare_args = [];
 
@@ -307,7 +348,7 @@ class Obydullah_ERP_Attendance
         }
 
         if (!empty($prepare_args)) {
-            return $wpdb->get_results($wpdb->prepare(
+            $results = $wpdb->get_results($wpdb->prepare(
                 "SELECT s.*, b.name AS branch_name
                 FROM {$this->shifts_table} s
                 LEFT JOIN {$wpdb->prefix}erp_branches b ON s.branch_id = b.id
@@ -315,7 +356,7 @@ class Obydullah_ERP_Attendance
                 $prepare_args
             )) ?: [];
         } else {
-            return $wpdb->get_results($wpdb->prepare(
+            $results = $wpdb->get_results($wpdb->prepare(
                 "SELECT s.*, b.name AS branch_name
                 FROM {$this->shifts_table} s
                 LEFT JOIN {$wpdb->prefix}erp_branches b ON s.branch_id = b.id
@@ -323,6 +364,9 @@ class Obydullah_ERP_Attendance
                 1
             )) ?: [];
         }
+
+        Obydullah_ERP_Cache::set($cache_key, $this->shifts_table, $results);
+        return $results;
     }
 
     public function orerp_save_shift($data)
@@ -354,13 +398,17 @@ class Obydullah_ERP_Attendance
             $id = $wpdb->insert_id;
         }
 
+        Obydullah_ERP_Cache::invalidate($this->shifts_table);
+
         return $result !== false ? $id : new WP_Error('save_failed', __('Failed to save shift.', 'obydullah-restaurant-erp'));
     }
 
     public function orerp_delete_shift($id)
     {
         global $wpdb;
-        return $wpdb->delete($this->shifts_table, ['id' => intval($id)]) !== false;
+        $result = $wpdb->delete($this->shifts_table, ['id' => intval($id)]) !== false;
+        Obydullah_ERP_Cache::invalidate($this->shifts_table);
+        return $result;
     }
 
     // --- AJAX ---
@@ -394,7 +442,7 @@ class Obydullah_ERP_Attendance
         }
 
         $employee_id = intval($_POST['employee_id'] ?? 0);
-        $notes = sanitize_textarea_field($_POST['notes'] ?? 'orerp_');
+        $notes = sanitize_textarea_field(wp_unslash($_POST['notes'] ?? 'orerp_'));
 
         $result = $this->orerp_clock_out($employee_id, $notes);
 

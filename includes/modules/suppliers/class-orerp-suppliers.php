@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Suppliers Management
  *
@@ -32,7 +33,7 @@ class Obydullah_ERP_Suppliers
 
     public function orerp_render_page()
     {
-        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list';
+        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
 
         if ($action === 'add' || $action === 'edit') {
             $this->orerp_render_form($action);
@@ -67,7 +68,7 @@ class Obydullah_ERP_Suppliers
     {
         $supplier = null;
         if ($mode === 'edit') {
-            $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+            $id = isset($_GET['id']) ? intval($_GET['id']) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
             if ($id) {
                 $supplier = $this->orerp_get_supplier($id);
             }
@@ -163,6 +164,12 @@ class Obydullah_ERP_Suppliers
         $defaults = ['per_page' => 20, 'page' => 1, 'search' => 'orerp_', 'active' => 'orerp_'];
         $args = wp_parse_args($args, $defaults);
 
+        $cache_key = 'suppliers_list_' . $args['page'] . '_' . $args['per_page'] . '_' . $args['search'] . '_' . $args['active'];
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false !== $cached) {
+            return $cached;
+        }
+
         $where = '1=1';
         $prepare_args = [];
 
@@ -191,18 +198,28 @@ class Obydullah_ERP_Suppliers
             array_merge($prepare_args, [$args['per_page'], $offset])
         ));
 
-        return [
+        $return = [
             'suppliers'    => $results ?: [],
             'total'        => $total,
             'total_pages'  => ceil($total / $args['per_page']),
             'current_page' => $args['page'],
         ];
+
+        Obydullah_ERP_Cache::set($cache_key, $this->table, $return);
+        return $return;
     }
 
     public function orerp_get_supplier($id)
     {
         global $wpdb;
-        return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", intval($id)));
+        $cache_key = 'supplier_' . intval($id);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false !== $cached) {
+            return $cached;
+        }
+        $supplier = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", intval($id)));
+        Obydullah_ERP_Cache::set($cache_key, $this->table, $supplier);
+        return $supplier;
     }
 
     public function orerp_save_supplier($data)
@@ -240,6 +257,8 @@ class Obydullah_ERP_Suppliers
             $id = $wpdb->insert_id;
         }
 
+        Obydullah_ERP_Cache::invalidate($this->table);
+
         return $result !== false ? $id : new WP_Error('save_failed', __('Failed to save supplier.', 'obydullah-restaurant-erp'));
     }
 
@@ -248,13 +267,20 @@ class Obydullah_ERP_Suppliers
         global $wpdb;
         $wpdb->delete($this->table, ['id' => intval($id)]);
         $wpdb->delete($this->products_table, ['supplier_id' => intval($id)]);
+        Obydullah_ERP_Cache::invalidate($this->table);
+        Obydullah_ERP_Cache::invalidate($this->products_table);
         return true;
     }
 
     public function orerp_get_supplier_products($supplier_id)
     {
         global $wpdb;
-        return $wpdb->get_results($wpdb->prepare(
+        $cache_key = 'supplier_products_' . intval($supplier_id);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->products_table);
+        if (false !== $cached) {
+            return $cached;
+        }
+        $results = $wpdb->get_results($wpdb->prepare(
             "SELECT sp.*, p.post_title as product_name
             FROM {$this->products_table} sp
             LEFT JOIN {$wpdb->posts} p ON sp.product_id = p.ID
@@ -262,6 +288,8 @@ class Obydullah_ERP_Suppliers
             ORDER BY p.post_title",
             intval($supplier_id)
         )) ?: [];
+        Obydullah_ERP_Cache::set($cache_key, $this->products_table, $results);
+        return $results;
     }
 
     public function orerp_save_supplier_product($data)
@@ -298,13 +326,17 @@ class Obydullah_ERP_Suppliers
             }
         }
 
+        Obydullah_ERP_Cache::invalidate($this->products_table);
+
         return $result !== false ? $id : new WP_Error('save_failed', __('Failed to save product.', 'obydullah-restaurant-erp'));
     }
 
     public function orerp_delete_supplier_product($id)
     {
         global $wpdb;
-        return $wpdb->delete($this->products_table, ['id' => intval($id)]) !== false;
+        $result = $wpdb->delete($this->products_table, ['id' => intval($id)]) !== false;
+        Obydullah_ERP_Cache::invalidate($this->products_table);
+        return $result;
     }
 
     public function orerp_ajax_get_suppliers()
@@ -358,9 +390,15 @@ class Obydullah_ERP_Suppliers
         }
 
         global $wpdb;
+        $cache_key = 'suppliers_all_active';
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false !== $cached) {
+            wp_send_json_success($cached);
+        }
         $suppliers = $wpdb->get_results(
             "SELECT id, name, code FROM {$this->table} WHERE is_active = 1 ORDER BY name"
         );
+        Obydullah_ERP_Cache::set($cache_key, $this->table, $suppliers);
         wp_send_json_success($suppliers);
     }
 

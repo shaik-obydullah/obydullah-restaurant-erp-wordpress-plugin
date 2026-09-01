@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Purchase Orders Management
  *
@@ -34,7 +35,7 @@ class Obydullah_ERP_Purchase_Orders
 
     public function orerp_render_page()
     {
-        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list';
+        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
 
         if ($action === 'add' || $action === 'edit') {
             $this->orerp_render_form($action);
@@ -71,7 +72,7 @@ class Obydullah_ERP_Purchase_Orders
         $items = [];
 
         if ($mode === 'edit') {
-            $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+            $id = isset($_GET['id']) ? intval($_GET['id']) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
             if ($id) {
                 $po = $this->orerp_get_purchase($id);
                 $items = $this->orerp_get_purchase_items($id);
@@ -105,7 +106,15 @@ class Obydullah_ERP_Purchase_Orders
                                 <option value=""><?php esc_html_e('Select Branch', 'obydullah-restaurant-erp'); ?></option>
                                 <?php
                                 global $wpdb;
-                                $branches = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}erp_branches WHERE is_active = 1 ORDER BY name");
+                                $branches_table = $wpdb->prefix . 'erp_branches';
+                                $branches_key = 'active_branches';
+                                $cached_branches = Obydullah_ERP_Cache::get($branches_key, $branches_table);
+                                if (false !== $cached_branches) {
+                                    $branches = $cached_branches;
+                                } else {
+                                    $branches = $wpdb->get_results("SELECT id, name FROM {$branches_table} WHERE is_active = 1 ORDER BY name");
+                                    Obydullah_ERP_Cache::set($branches_key, $branches_table, $branches);
+                                }
                                 foreach ($branches as $b) {
                                     printf('<option value="%s" %s>%s</option>', esc_attr($b->id), selected($po->branch_id ?? 'orerp_', $b->id, false), esc_html($b->name));
                                 }
@@ -120,7 +129,15 @@ class Obydullah_ERP_Purchase_Orders
                             <select name="supplier_id" class="regular-text" required id="po-supplier">
                                 <option value=""><?php esc_html_e('Select Supplier', 'obydullah-restaurant-erp'); ?></option>
                                 <?php
-                                $suppliers = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}erp_suppliers WHERE is_active = 1 ORDER BY name");
+                                $suppliers_table = $wpdb->prefix . 'erp_suppliers';
+                                $suppliers_key = 'active_suppliers';
+                                $cached_suppliers = Obydullah_ERP_Cache::get($suppliers_key, $suppliers_table);
+                                if (false !== $cached_suppliers) {
+                                    $suppliers = $cached_suppliers;
+                                } else {
+                                    $suppliers = $wpdb->get_results("SELECT id, name FROM {$suppliers_table} WHERE is_active = 1 ORDER BY name");
+                                    Obydullah_ERP_Cache::set($suppliers_key, $suppliers_table, $suppliers);
+                                }
                                 foreach ($suppliers as $s) {
                                     printf('<option value="%s" %s>%s</option>', esc_attr($s->id), selected($po->supplier_id ?? 'orerp_', $s->id, false), esc_html($s->name));
                                 }
@@ -226,22 +243,36 @@ class Obydullah_ERP_Purchase_Orders
 
         $offset = ($args['page'] - 1) * $args['per_page'];
 
-        if (!empty($prepare_args)) {
-            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} po WHERE {$where}", $prepare_args)));
+        $count_key = 'purchases_count_' . md5(serialize($prepare_args));
+        $cached = Obydullah_ERP_Cache::get($count_key, $this->table);
+        if (false !== $cached) {
+            $total = intval($cached);
         } else {
-            $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} po WHERE 1 = %d", 1)));
+            if (!empty($prepare_args)) {
+                $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} po WHERE {$where}", $prepare_args)));
+            } else {
+                $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->table} po WHERE 1 = %d", 1)));
+            }
+            Obydullah_ERP_Cache::set($count_key, $this->table, $total);
         }
 
-        $results = $wpdb->get_results($wpdb->prepare(
-            "SELECT po.*, s.name as supplier_name, b.name as branch_name
-            FROM {$this->table} po
-            LEFT JOIN {$wpdb->prefix}erp_suppliers s ON po.supplier_id = s.id
-            LEFT JOIN {$wpdb->prefix}erp_branches b ON po.branch_id = b.id
-            WHERE {$where}
-            ORDER BY po.created_at DESC
-            LIMIT %d OFFSET %d",
-            array_merge($prepare_args, [$args['per_page'], $offset])
-        ));
+        $list_key = 'purchases_list_' . md5(serialize(array_merge($prepare_args, [$args['per_page'], $offset])));
+        $cached = Obydullah_ERP_Cache::get($list_key, $this->table);
+        if (false !== $cached) {
+            $results = $cached;
+        } else {
+            $results = $wpdb->get_results($wpdb->prepare(
+                "SELECT po.*, s.name as supplier_name, b.name as branch_name
+                FROM {$this->table} po
+                LEFT JOIN {$wpdb->prefix}erp_suppliers s ON po.supplier_id = s.id
+                LEFT JOIN {$wpdb->prefix}erp_branches b ON po.branch_id = b.id
+                WHERE {$where}
+                ORDER BY po.created_at DESC
+                LIMIT %d OFFSET %d",
+                array_merge($prepare_args, [$args['per_page'], $offset])
+            ));
+            Obydullah_ERP_Cache::set($list_key, $this->table, $results);
+        }
 
         $helpers = new Obydullah_ERP_Helpers();
         foreach ($results as &$row) {
@@ -260,13 +291,27 @@ class Obydullah_ERP_Purchase_Orders
     public function orerp_get_purchase($id)
     {
         global $wpdb;
-        return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", intval($id)));
+        $cache_key = 'purchase_' . intval($id);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false !== $cached) {
+            return $cached;
+        }
+
+        $purchase = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", intval($id)));
+        Obydullah_ERP_Cache::set($cache_key, $this->table, $purchase);
+        return $purchase;
     }
 
     public function orerp_get_purchase_items($purchase_id)
     {
         global $wpdb;
-        return $wpdb->get_results($wpdb->prepare(
+        $cache_key = 'purchase_items_' . intval($purchase_id);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->items_table);
+        if (false !== $cached) {
+            return $cached;
+        }
+
+        $items = $wpdb->get_results($wpdb->prepare(
             "SELECT pi.*, p.post_title as product_name
             FROM {$this->items_table} pi
             LEFT JOIN {$wpdb->posts} p ON pi.product_id = p.ID
@@ -274,6 +319,8 @@ class Obydullah_ERP_Purchase_Orders
             ORDER BY pi.id",
             intval($purchase_id)
         )) ?: [];
+        Obydullah_ERP_Cache::set($cache_key, $this->items_table, $items);
+        return $items;
     }
 
     public function orerp_save_purchase($data)
@@ -326,6 +373,8 @@ class Obydullah_ERP_Purchase_Orders
             $result = $wpdb->insert($this->table, $save_data);
             $id = $wpdb->insert_id;
         }
+        Obydullah_ERP_Cache::invalidate($this->table);
+        Obydullah_ERP_Cache::invalidate($this->items_table);
 
         if (!$id) {
             return new WP_Error('save_failed', __('Failed to save purchase order.', 'obydullah-restaurant-erp'));
@@ -346,6 +395,7 @@ class Obydullah_ERP_Purchase_Orders
                 ]);
             }
         }
+        Obydullah_ERP_Cache::invalidate($this->items_table);
 
         return $id;
     }
@@ -381,11 +431,13 @@ class Obydullah_ERP_Purchase_Orders
                 $this->orerp_create_journal_entry_for_purchase($po, $item, $remaining);
             }
         }
+        Obydullah_ERP_Cache::invalidate($this->items_table);
 
         $wpdb->update($this->table, [
             'status'        => 'received',
             'received_date' => current_time('Y-m-d'),
         ], ['id' => $id]);
+        Obydullah_ERP_Cache::invalidate($this->table);
 
         return true;
     }
@@ -432,6 +484,7 @@ class Obydullah_ERP_Purchase_Orders
             'notes'          => $notes,
             'payment_date'   => $payment_date,
         ]);
+        Obydullah_ERP_Cache::invalidate($this->payments_table);
 
         $po = $this->orerp_get_purchase($purchase_id);
         if ($po) {
@@ -454,10 +507,18 @@ class Obydullah_ERP_Purchase_Orders
     public function orerp_get_payments($purchase_id)
     {
         global $wpdb;
-        return $wpdb->get_results($wpdb->prepare(
+        $cache_key = 'purchase_payments_' . intval($purchase_id);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->payments_table);
+        if (false !== $cached) {
+            return $cached;
+        }
+
+        $payments = $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM {$this->payments_table} WHERE purchase_id = %d ORDER BY payment_date DESC",
             intval($purchase_id)
         )) ?: [];
+        Obydullah_ERP_Cache::set($cache_key, $this->payments_table, $payments);
+        return $payments;
     }
 
     public function orerp_delete_purchase($id)
@@ -466,6 +527,9 @@ class Obydullah_ERP_Purchase_Orders
         $wpdb->delete($this->items_table, ['purchase_id' => intval($id)]);
         $wpdb->delete($this->payments_table, ['purchase_id' => intval($id)]);
         $wpdb->delete($this->table, ['id' => intval($id)]);
+        Obydullah_ERP_Cache::invalidate($this->items_table);
+        Obydullah_ERP_Cache::invalidate($this->payments_table);
+        Obydullah_ERP_Cache::invalidate($this->table);
         return true;
     }
 

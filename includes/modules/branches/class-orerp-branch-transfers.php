@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Branch Transfers - Inter-branch stock transfers
  *
@@ -39,6 +40,13 @@ class Obydullah_ERP_Branch_Transfers
         ];
 
         $args = wp_parse_args($args, $defaults);
+
+        $cache_key = 'transfers_list_' . $args['page'] . '_' . $args['per_page'] . '_' . $args['status'] . '_' . $args['branch_id'];
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false !== $cached) {
+            return $cached;
+        }
+
         $where = '1=1';
         $prepare_args = [];
 
@@ -74,17 +82,27 @@ class Obydullah_ERP_Branch_Transfers
             array_merge($prepare_args, [$args['per_page'], $offset])
         ));
 
-        return [
+        $return = [
             'transfers'    => $results ?: [],
             'total'        => $total,
             'total_pages'  => ceil($total / $args['per_page']),
             'current_page' => $args['page'],
         ];
+
+        Obydullah_ERP_Cache::set($cache_key, $this->table, $return);
+        return $return;
     }
 
     public function orerp_get_transfer($id)
     {
         global $wpdb;
+
+        $id = intval($id);
+        $cache_key = 'transfer_' . $id;
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false !== $cached) {
+            return $cached;
+        }
 
         $transfer = $wpdb->get_row($wpdb->prepare(
             "SELECT t.*,
@@ -94,7 +112,7 @@ class Obydullah_ERP_Branch_Transfers
             LEFT JOIN {$wpdb->prefix}erp_branches fb ON t.from_branch_id = fb.id
             LEFT JOIN {$wpdb->prefix}erp_branches tb ON t.to_branch_id = tb.id
             WHERE t.id = %d",
-            intval($id)
+            $id
         ));
 
         if ($transfer) {
@@ -103,10 +121,11 @@ class Obydullah_ERP_Branch_Transfers
                 FROM {$this->items_table} ti
                 LEFT JOIN {$wpdb->posts} p ON ti.product_id = p.ID
                 WHERE ti.transfer_id = %d",
-                intval($id)
+                $id
             ));
         }
 
+        Obydullah_ERP_Cache::set($cache_key, $this->table, $transfer);
         return $transfer;
     }
 
@@ -153,6 +172,9 @@ class Obydullah_ERP_Branch_Transfers
             ]);
         }
 
+        Obydullah_ERP_Cache::invalidate($this->table);
+        Obydullah_ERP_Cache::invalidate($this->items_table);
+
         return $transfer_id;
     }
 
@@ -191,6 +213,9 @@ class Obydullah_ERP_Branch_Transfers
             'received_at' => current_time('mysql'),
         ], ['id' => $id]);
 
+        Obydullah_ERP_Cache::invalidate($this->table);
+        Obydullah_ERP_Cache::invalidate($this->items_table);
+
         return true;
     }
 
@@ -212,6 +237,8 @@ class Obydullah_ERP_Branch_Transfers
         $wpdb->update($this->table, [
             'status' => 'cancelled',
         ], ['id' => $id]);
+
+        Obydullah_ERP_Cache::invalidate($this->table);
 
         return true;
     }

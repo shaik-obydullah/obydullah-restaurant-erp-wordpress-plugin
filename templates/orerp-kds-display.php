@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$orerp_kds_branch_id = isset($_GET['branch_id']) ? intval($_GET['branch_id']) : 0;
+$orerp_kds_branch_id = isset($_GET['branch_id']) ? intval($_GET['branch_id']) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
 $orerp_kds_nonce = wp_create_nonce('orerp_kitchen');
 $orerp_kds_branch_nonce = wp_create_nonce('orerp_branches');
 $orerp_kds_ajax  = admin_url('admin-ajax.php');

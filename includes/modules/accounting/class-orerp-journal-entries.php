@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Journal Entries - Double-Entry Accounting
  *
@@ -31,7 +32,7 @@ class Obydullah_ERP_Journal_Entries
 
     public function orerp_render_page()
     {
-        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list';
+        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
 
         if ($action === 'add' || $action === 'edit') {
             $this->orerp_render_form($action);
@@ -68,7 +69,7 @@ class Obydullah_ERP_Journal_Entries
         $lines = [];
 
         if ($mode === 'edit') {
-            $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+            $id = isset($_GET['id']) ? intval($_GET['id']) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
             if ($id) {
                 $entry = $this->orerp_get_entry($id);
                 $lines = $this->orerp_get_entry_lines($id);
@@ -201,16 +202,34 @@ class Obydullah_ERP_Journal_Entries
 
         $offset = ($args['page'] - 1) * $args['per_page'];
 
-        if (!empty($prepare_args)) {
+        $cache_key_total = 'entries_count_' . sanitize_key(implode('_', [
+            $args['per_page'], $args['page'], $args['date_from'], $args['date_to'], $args['posted'],
+        ]));
+        $cached_total = Obydullah_ERP_Cache::get($cache_key_total, $this->entries_table);
+        if (false !== $cached_total) {
+            $total = $cached_total;
+        } elseif (!empty($prepare_args)) {
             $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->entries_table} WHERE {$where}", $prepare_args)));
         } else {
             $total = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$this->entries_table} WHERE 1 = %d", 1)));
         }
+        if (false === $cached_total) {
+            Obydullah_ERP_Cache::set($cache_key_total, $this->entries_table, $total);
+        }
 
-        $results = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM {$this->entries_table} WHERE {$where} ORDER BY date DESC, id DESC LIMIT %d OFFSET %d",
-            array_merge($prepare_args, [$args['per_page'], $offset])
-        ));
+        $cache_key_list = 'entries_list_' . sanitize_key(implode('_', [
+            $args['per_page'], $offset, $args['date_from'], $args['date_to'], $args['posted'],
+        ]));
+        $cached_results = Obydullah_ERP_Cache::get($cache_key_list, $this->entries_table);
+        if (false !== $cached_results) {
+            $results = $cached_results;
+        } else {
+            $results = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM {$this->entries_table} WHERE {$where} ORDER BY date DESC, id DESC LIMIT %d OFFSET %d",
+                array_merge($prepare_args, [$args['per_page'], $offset])
+            ));
+            Obydullah_ERP_Cache::set($cache_key_list, $this->entries_table, $results);
+        }
 
         $helpers = new Obydullah_ERP_Helpers();
         foreach ($results as &$row) {
@@ -229,30 +248,58 @@ class Obydullah_ERP_Journal_Entries
     public function orerp_get_entry($id)
     {
         global $wpdb;
-        return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->entries_table} WHERE id = %d", intval($id)));
+        $id = intval($id);
+        $cache_key = 'journal_entry_' . $id;
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->entries_table);
+        if (false !== $cached) {
+            return $cached;
+        }
+        $entry = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->entries_table} WHERE id = %d", $id));
+        if (null !== $entry) {
+            Obydullah_ERP_Cache::set($cache_key, $this->entries_table, $entry);
+        }
+        return $entry;
     }
 
     public function orerp_get_entry_lines($entry_id)
     {
         global $wpdb;
-        return $wpdb->get_results($wpdb->prepare(
+        $entry_id = intval($entry_id);
+        $cache_key = 'journal_entry_lines_' . $entry_id;
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->lines_table);
+        if (false !== $cached) {
+            return $cached;
+        }
+        $lines = $wpdb->get_results($wpdb->prepare(
             "SELECT jl.*, ja.code as account_code, ja.name as account_name
             FROM {$this->lines_table} jl
             LEFT JOIN {$wpdb->prefix}erp_accounts ja ON jl.account_id = ja.id
             WHERE jl.entry_id = %d
             ORDER BY jl.id",
-            intval($entry_id)
-        )) ?: [];
+            $entry_id
+        ));
+        Obydullah_ERP_Cache::set($cache_key, $this->lines_table, $lines);
+        return $lines ?: [];
     }
 
     public function orerp_get_entry_totals($entry_id)
     {
         global $wpdb;
-        return $wpdb->get_row($wpdb->prepare(
+        $entry_id = intval($entry_id);
+        $cache_key = 'journal_entry_totals_' . $entry_id;
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->lines_table);
+        if (false !== $cached) {
+            return $cached;
+        }
+        $totals = $wpdb->get_row($wpdb->prepare(
             "SELECT COALESCE(SUM(debit), 0) as total_debit, COALESCE(SUM(credit), 0) as total_credit
             FROM {$this->lines_table} WHERE entry_id = %d",
-            intval($entry_id)
+            $entry_id
         ));
+        if (null !== $totals) {
+            Obydullah_ERP_Cache::set($cache_key, $this->lines_table, $totals);
+        }
+        return $totals;
     }
 
     public function orerp_create_entry($data)
@@ -298,6 +345,8 @@ class Obydullah_ERP_Journal_Entries
             return new WP_Error('create_failed', __('Failed to create journal entry.', 'obydullah-restaurant-erp'));
         }
 
+        Obydullah_ERP_Cache::invalidate($this->entries_table);
+
         foreach ($lines as $line) {
             $account_id = intval($line['account_id'] ?? 0);
             $account_code = sanitize_text_field($line['account_code'] ?? 'orerp_');
@@ -317,6 +366,8 @@ class Obydullah_ERP_Journal_Entries
                 ]);
             }
         }
+
+        Obydullah_ERP_Cache::invalidate($this->lines_table);
 
         return $entry_id;
     }
@@ -372,6 +423,9 @@ class Obydullah_ERP_Journal_Entries
             $id = $wpdb->insert_id;
         }
 
+        Obydullah_ERP_Cache::invalidate($this->entries_table);
+        Obydullah_ERP_Cache::invalidate($this->lines_table);
+
         foreach ($lines as $line) {
             $account_id = intval($line['account_id'] ?? 0);
             $account_code = sanitize_text_field($line['account_code'] ?? 'orerp_');
@@ -416,6 +470,7 @@ class Obydullah_ERP_Journal_Entries
         }
 
         $wpdb->update($this->entries_table, ['is_posted' => 1], ['id' => $id]);
+        Obydullah_ERP_Cache::invalidate($this->entries_table);
         return true;
     }
 
@@ -431,6 +486,8 @@ class Obydullah_ERP_Journal_Entries
 
         $wpdb->delete($this->lines_table, ['entry_id' => $id]);
         $wpdb->delete($this->entries_table, ['id' => $id]);
+        Obydullah_ERP_Cache::invalidate($this->entries_table);
+        Obydullah_ERP_Cache::invalidate($this->lines_table);
         return true;
     }
 

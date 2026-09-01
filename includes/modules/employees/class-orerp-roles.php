@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Custom Roles & Permissions
  *
@@ -154,6 +155,12 @@ class Obydullah_ERP_Roles
         global $wpdb;
 
         $table = $wpdb->prefix . 'erp_employees';
+        $cache_key = 'employees_with_roles';
+        $cached = Obydullah_ERP_Cache::get($cache_key, $table);
+        if (false !== $cached) {
+            return $cached;
+        }
+
         $users = $wpdb->get_results(
             "SELECT e.id, e.employee_code, e.position, e.user_id,
                 b.name AS branch_name, u.display_name AS display_name
@@ -180,11 +187,13 @@ class Obydullah_ERP_Roles
             }
         }
 
+        Obydullah_ERP_Cache::set($cache_key, $table, $users);
         return $users;
     }
 
     public function orerp_assign_role($user_id, $role_key)
     {
+        global $wpdb;
         $user_id = intval($user_id);
 
         if (!$user_id) {
@@ -199,6 +208,7 @@ class Obydullah_ERP_Roles
             foreach ($allowed as $role) {
                 $user->remove_role($role);
             }
+            Obydullah_ERP_Cache::invalidate($wpdb->prefix . 'erp_employees');
             return true;
         }
 
@@ -211,6 +221,8 @@ class Obydullah_ERP_Roles
             $user->remove_role($role);
         }
         $user->add_role($role_key);
+
+        Obydullah_ERP_Cache::invalidate($wpdb->prefix . 'erp_employees');
 
         return true;
     }

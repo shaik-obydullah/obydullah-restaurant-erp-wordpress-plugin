@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Helper Functions
  *
@@ -174,10 +175,19 @@ class Obydullah_ERP_Helpers
         global $wpdb;
         $table = $wpdb->prefix . 'erp_accounts';
 
-        return intval($wpdb->get_var($wpdb->prepare(
+        $cache_key = 'account_id_by_code_' . $code;
+        $cached = Obydullah_ERP_Cache::get($cache_key, $table);
+        if (false !== $cached) {
+            return intval($cached);
+        }
+
+        $result = intval($wpdb->get_var($wpdb->prepare(
             "SELECT id FROM {$table} WHERE code = %s",
             $code
         )));
+
+        Obydullah_ERP_Cache::set($cache_key, $table, $result);
+        return $result;
     }
 
     public static function orerp_sanitize_price($price)

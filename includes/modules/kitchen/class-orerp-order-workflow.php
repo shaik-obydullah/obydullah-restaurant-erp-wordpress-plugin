@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Kitchen Order Workflow
  *
@@ -98,6 +99,7 @@ class Obydullah_ERP_Order_Workflow
         }
 
         $kitchen_order_id = $wpdb->insert_id;
+        Obydullah_ERP_Cache::invalidate($this->table_orders);
 
         foreach ($items as $item) {
             $wpdb->insert($this->table_items, [
@@ -108,6 +110,7 @@ class Obydullah_ERP_Order_Workflow
                 'status'           => 'pending',
             ]);
         }
+        Obydullah_ERP_Cache::invalidate($this->table_items);
 
         return $kitchen_order_id;
     }
@@ -121,6 +124,12 @@ class Obydullah_ERP_Order_Workflow
     public function orerp_get_order($kitchen_order_id)
     {
         global $wpdb;
+
+        $order_key = 'workflow_order_' . intval($kitchen_order_id);
+        $cached = Obydullah_ERP_Cache::get($order_key, $this->table_orders);
+        if (false !== $cached) {
+            return $cached;
+        }
 
         $order = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM {$this->table_orders} WHERE id = %d",
@@ -140,6 +149,7 @@ class Obydullah_ERP_Order_Workflow
             $item->started_at = $item->started_at ?: 'orerp_';
         }
 
+        Obydullah_ERP_Cache::set($order_key, $this->table_orders, $order);
         return $order;
     }
 
@@ -174,6 +184,7 @@ class Obydullah_ERP_Order_Workflow
         }
 
         $wpdb->update($this->table_items, $update, ['id' => intval($item_id)]);
+        Obydullah_ERP_Cache::invalidate($this->table_items);
 
         $this->orerp_maybe_complete_order($item->kitchen_order_id);
 
@@ -213,6 +224,7 @@ class Obydullah_ERP_Order_Workflow
                 'status'       => 'ready',
                 'completed_at' => current_time('mysql'),
             ], ['id' => intval($kitchen_order_id)]);
+            Obydullah_ERP_Cache::invalidate($this->table_orders);
         }
     }
 

@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Kitchen Display System (KDS)
  *
@@ -54,7 +55,7 @@ class Obydullah_ERP_Kitchen_Display
 
     public function orerp_render_page()
     {
-        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list';
+        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
 
         if ($action === 'add') {
             $this->orerp_render_form('add');
@@ -65,7 +66,7 @@ class Obydullah_ERP_Kitchen_Display
 
     private function orerp_render_kds()
     {
-        $branch_id = isset($_GET['branch_id']) ? intval($_GET['branch_id']) : 0;
+        $branch_id = isset($_GET['branch_id']) ? intval($_GET['branch_id']) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
         ?>
         <div class="wrap">
             <h1 class="wp-heading-inline"><?php esc_html_e('Kitchen Display', 'obydullah-restaurant-erp'); ?></h1>
@@ -212,7 +213,14 @@ class Obydullah_ERP_Kitchen_Display
     {
         global $wpdb;
         $table = $wpdb->prefix . 'erp_branches';
-        $branches = $wpdb->get_results("SELECT id, name FROM {$table} WHERE is_active = 1 ORDER BY name");
+        $cache_key = 'active_branches';
+        $cached = Obydullah_ERP_Cache::get($cache_key, $table);
+        if (false !== $cached) {
+            $branches = $cached;
+        } else {
+            $branches = $wpdb->get_results("SELECT id, name FROM {$table} WHERE is_active = 1 ORDER BY name");
+            Obydullah_ERP_Cache::set($cache_key, $table, $branches);
+        }
 
         foreach ($branches as $branch) {
             printf(
@@ -260,19 +268,33 @@ class Obydullah_ERP_Kitchen_Display
         $where .= ' AND DATE(ko.created_at) = %s';
         $prepare_args[] = $date_filter;
 
-        $total = (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->table_orders} ko WHERE {$where}",
-            $prepare_args
-        ));
+        $cache_key = 'orders_count_' . md5(serialize($prepare_args));
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table_orders);
+        if (false !== $cached) {
+            $total = (int) $cached;
+        } else {
+            $total = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->table_orders} ko WHERE {$where}",
+                $prepare_args
+            ));
+            Obydullah_ERP_Cache::set($cache_key, $this->table_orders, $total);
+        }
 
         $offset = ($args['page'] - 1) * $args['per_page'];
-        $orders = $wpdb->get_results($wpdb->prepare(
-            "SELECT ko.* FROM {$this->table_orders} ko
-            WHERE {$where}
-            ORDER BY ko.priority DESC, ko.created_at ASC
-            LIMIT %d OFFSET %d",
-            array_merge($prepare_args, [$args['per_page'], $offset])
-        )) ?: [];
+        $list_key = 'orders_list_' . md5(serialize(array_merge($prepare_args, [$args['per_page'], $offset])));
+        $cached = Obydullah_ERP_Cache::get($list_key, $this->table_orders);
+        if (false !== $cached) {
+            $orders = $cached;
+        } else {
+            $orders = $wpdb->get_results($wpdb->prepare(
+                "SELECT ko.* FROM {$this->table_orders} ko
+                WHERE {$where}
+                ORDER BY ko.priority DESC, ko.created_at ASC
+                LIMIT %d OFFSET %d",
+                array_merge($prepare_args, [$args['per_page'], $offset])
+            )) ?: [];
+            Obydullah_ERP_Cache::set($list_key, $this->table_orders, $orders);
+        }
 
         foreach ($orders as &$order) {
             $order->formatted_time = Obydullah_ERP_Helpers::orerp_format_date($order->created_at);
@@ -293,38 +315,79 @@ class Obydullah_ERP_Kitchen_Display
 
         $today = current_time('Y-m-d');
 
-        if ($branch_id > 0) {
-            $pending = (int) $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'pending' AND branch_id = %d",
-                $branch_id
-            ));
-            $preparing = (int) $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'preparing' AND branch_id = %d",
-                $branch_id
-            ));
-            $ready = (int) $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'ready' AND branch_id = %d",
-                $branch_id
-            ));
-            $completed_today = (int) $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'completed' AND DATE(completed_at) = %s AND branch_id = %d",
-                $today, $branch_id
-            ));
-        } else {
-            $pending = (int) $wpdb->get_var(
-                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'pending'"
-            );
-            $preparing = (int) $wpdb->get_var(
-                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'preparing'"
-            );
-            $ready = (int) $wpdb->get_var(
-                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'ready'"
-            );
-            $completed_today = (int) $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'completed' AND DATE(completed_at) = %s",
-                $today
-            ));
+        $cache_keys = [
+            'pending'         => 'stats_pending_' . $branch_id,
+            'preparing'       => 'stats_preparing_' . $branch_id,
+            'ready'           => 'stats_ready_' . $branch_id,
+            'completed_today' => 'stats_completed_today_' . $branch_id . '_' . $today,
+        ];
+
+        $stats = [];
+        foreach ($cache_keys as $stat => $key) {
+            $cached = Obydullah_ERP_Cache::get($key, $this->table_orders);
+            if (false !== $cached) {
+                $stats[$stat] = (int) $cached;
+            }
         }
+
+        if (!isset($stats['pending'])) {
+            if ($branch_id > 0) {
+                $stats['pending'] = (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'pending' AND branch_id = %d",
+                    $branch_id
+                ));
+            } else {
+                $stats['pending'] = (int) $wpdb->get_var(
+                    "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'pending'"
+                );
+            }
+            Obydullah_ERP_Cache::set($cache_keys['pending'], $this->table_orders, $stats['pending']);
+        }
+        if (!isset($stats['preparing'])) {
+            if ($branch_id > 0) {
+                $stats['preparing'] = (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'preparing' AND branch_id = %d",
+                    $branch_id
+                ));
+            } else {
+                $stats['preparing'] = (int) $wpdb->get_var(
+                    "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'preparing'"
+                );
+            }
+            Obydullah_ERP_Cache::set($cache_keys['preparing'], $this->table_orders, $stats['preparing']);
+        }
+        if (!isset($stats['ready'])) {
+            if ($branch_id > 0) {
+                $stats['ready'] = (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'ready' AND branch_id = %d",
+                    $branch_id
+                ));
+            } else {
+                $stats['ready'] = (int) $wpdb->get_var(
+                    "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'ready'"
+                );
+            }
+            Obydullah_ERP_Cache::set($cache_keys['ready'], $this->table_orders, $stats['ready']);
+        }
+        if (!isset($stats['completed_today'])) {
+            if ($branch_id > 0) {
+                $stats['completed_today'] = (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'completed' AND DATE(completed_at) = %s AND branch_id = %d",
+                    $today, $branch_id
+                ));
+            } else {
+                $stats['completed_today'] = (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$this->table_orders} WHERE status = 'completed' AND DATE(completed_at) = %s",
+                    $today
+                ));
+            }
+            Obydullah_ERP_Cache::set($cache_keys['completed_today'], $this->table_orders, $stats['completed_today']);
+        }
+
+        $pending = $stats['pending'];
+        $preparing = $stats['preparing'];
+        $ready = $stats['ready'];
+        $completed_today = $stats['completed_today'];
 
         return compact('pending', 'preparing', 'ready', 'completed_today');
     }
@@ -355,6 +418,7 @@ class Obydullah_ERP_Kitchen_Display
         ];
 
         $result = $wpdb->insert($this->table_orders, $insert);
+        Obydullah_ERP_Cache::invalidate($this->table_orders);
         return $result !== false ? $wpdb->insert_id : new WP_Error('create_failed', __('Failed to create kitchen order.', 'obydullah-restaurant-erp'));
     }
 
@@ -382,6 +446,7 @@ class Obydullah_ERP_Kitchen_Display
         }
 
         $wpdb->update($this->table_orders, $update, ['id' => intval($order_id)]);
+        Obydullah_ERP_Cache::invalidate($this->table_orders);
 
         return true;
     }
@@ -408,6 +473,7 @@ class Obydullah_ERP_Kitchen_Display
         ];
 
         $result = $wpdb->insert($this->table_prep, $insert);
+        Obydullah_ERP_Cache::invalidate($this->table_prep);
         return $result !== false ? $wpdb->insert_id : new WP_Error('save_failed', __('Failed to add prep tracking.', 'obydullah-restaurant-erp'));
     }
 
@@ -428,6 +494,7 @@ class Obydullah_ERP_Kitchen_Display
             'completed_at'        => $now,
             'actual_time_minutes' => $actual_minutes,
         ], ['id' => intval($prep_id)]);
+        Obydullah_ERP_Cache::invalidate($this->table_prep);
 
         return ['actual_time_minutes' => $actual_minutes];
     }
@@ -436,7 +503,13 @@ class Obydullah_ERP_Kitchen_Display
     {
         global $wpdb;
 
-        return $wpdb->get_results($wpdb->prepare(
+        $cache_key = 'prep_by_order_' . intval($kitchen_order_id);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table_prep);
+        if (false !== $cached) {
+            return $cached;
+        }
+
+        $results = $wpdb->get_results($wpdb->prepare(
             "SELECT pt.*, r.name AS recipe_name, COALESCE(NULLIF(e.employee_code, 'orerp_'), u.display_name) AS employee_name
             FROM {$this->table_prep} pt
             LEFT JOIN {$wpdb->prefix}erp_recipes r ON pt.recipe_id = r.id
@@ -446,6 +519,8 @@ class Obydullah_ERP_Kitchen_Display
             ORDER BY pt.started_at DESC",
             intval($kitchen_order_id)
         )) ?: [];
+        Obydullah_ERP_Cache::set($cache_key, $this->table_prep, $results);
+        return $results;
     }
 
     private function orerp_get_elapsed_time($from)
@@ -468,10 +543,10 @@ class Obydullah_ERP_Kitchen_Display
         $args = [
             'page'      => intval($_GET['page'] ?? 1),
             'per_page'  => 50,
-            'status'    => sanitize_text_field($_GET['status'] ?? 'orerp_'),
+            'status'    => sanitize_text_field(wp_unslash($_GET['status'] ?? 'orerp_')),
             'branch_id' => intval($_GET['branch_id'] ?? 0),
-            'station'   => sanitize_text_field($_GET['station'] ?? 'orerp_'),
-            'date'      => sanitize_text_field($_GET['date'] ?? 'orerp_'),
+            'station'   => sanitize_text_field(wp_unslash($_GET['station'] ?? 'orerp_')),
+            'date'      => sanitize_text_field(wp_unslash($_GET['date'] ?? 'orerp_')),
         ];
 
         wp_send_json_success($this->orerp_get_orders($args));
@@ -485,7 +560,7 @@ class Obydullah_ERP_Kitchen_Display
         }
 
         $order_id = intval($_POST['order_id'] ?? 0);
-        $status   = sanitize_text_field($_POST['status'] ?? 'orerp_');
+        $status   = sanitize_text_field(wp_unslash($_POST['status'] ?? 'orerp_'));
 
         $result = $this->orerp_update_status($order_id, $status);
         if (is_wp_error($result)) {

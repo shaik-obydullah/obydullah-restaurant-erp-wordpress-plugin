@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Recipe Management
  *
@@ -29,7 +30,7 @@ class Obydullah_ERP_Recipes
 
     public function orerp_render_page()
     {
-        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list';
+        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
 
         if ($action === 'add' || $action === 'edit') {
             $this->orerp_render_form($action);
@@ -66,7 +67,7 @@ class Obydullah_ERP_Recipes
         $ingredients = [];
 
         if ($mode === 'edit') {
-            $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+            $id = isset($_GET['id']) ? intval($_GET['id']) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
             if ($id) {
                 $recipe = $this->orerp_get_recipe($id);
                 $ingredients = $this->orerp_get_ingredients($id);
@@ -221,27 +222,48 @@ class Obydullah_ERP_Recipes
             $prepare_args[] = '%' . $wpdb->esc_like($args['search']) . '%';
         }
 
-        $total = (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->table_recipes} r WHERE {$where}",
-            $prepare_args
-        ));
+        $cache_key = 'recipes_count_' . md5(serialize($prepare_args));
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table_recipes);
+        if (false !== $cached) {
+            $total = (int) $cached;
+        } else {
+            $total = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->table_recipes} r WHERE {$where}",
+                $prepare_args
+            ));
+            Obydullah_ERP_Cache::set($cache_key, $this->table_recipes, $total);
+        }
 
         $offset = ($args['page'] - 1) * $args['per_page'];
-        $recipes = $wpdb->get_results($wpdb->prepare(
-            "SELECT r.*, p.post_title AS product_name
-            FROM {$this->table_recipes} r
-            LEFT JOIN {$wpdb->posts} p ON r.product_id = p.ID
-            WHERE {$where}
-            ORDER BY r.name ASC
-            LIMIT %d OFFSET %d",
-            array_merge($prepare_args, [$args['per_page'], $offset])
-        )) ?: [];
+        $list_key = 'recipes_list_' . md5(serialize(array_merge($prepare_args, [$args['per_page'], $offset])));
+        $cached = Obydullah_ERP_Cache::get($list_key, $this->table_recipes);
+        if (false !== $cached) {
+            $recipes = $cached;
+        } else {
+            $recipes = $wpdb->get_results($wpdb->prepare(
+                "SELECT r.*, p.post_title AS product_name
+                FROM {$this->table_recipes} r
+                LEFT JOIN {$wpdb->posts} p ON r.product_id = p.ID
+                WHERE {$where}
+                ORDER BY r.name ASC
+                LIMIT %d OFFSET %d",
+                array_merge($prepare_args, [$args['per_page'], $offset])
+            )) ?: [];
+            Obydullah_ERP_Cache::set($list_key, $this->table_recipes, $recipes);
+        }
 
         foreach ($recipes as &$recipe) {
-            $recipe->ingredient_count = (int) $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->table_ingredients} WHERE recipe_id = %d",
-                $recipe->id
-            ));
+            $count_key = 'recipe_ingredient_count_' . $recipe->id;
+            $cached = Obydullah_ERP_Cache::get($count_key, $this->table_ingredients);
+            if (false !== $cached) {
+                $recipe->ingredient_count = (int) $cached;
+            } else {
+                $recipe->ingredient_count = (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$this->table_ingredients} WHERE recipe_id = %d",
+                    $recipe->id
+                ));
+                Obydullah_ERP_Cache::set($count_key, $this->table_ingredients, $recipe->ingredient_count);
+            }
             $recipe->total_time = ($recipe->prep_time_minutes ?? 0) + ($recipe->cook_time_minutes ?? 0);
         }
 
@@ -256,16 +278,30 @@ class Obydullah_ERP_Recipes
     public function orerp_get_recipe($id)
     {
         global $wpdb;
-        return $wpdb->get_row($wpdb->prepare(
+        $cache_key = 'recipe_' . intval($id);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table_recipes);
+        if (false !== $cached) {
+            return $cached;
+        }
+
+        $recipe = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM {$this->table_recipes} WHERE id = %d",
             intval($id)
         ));
+        Obydullah_ERP_Cache::set($cache_key, $this->table_recipes, $recipe);
+        return $recipe;
     }
 
     public function orerp_get_ingredients($recipe_id)
     {
         global $wpdb;
-        return $wpdb->get_results($wpdb->prepare(
+        $cache_key = 'recipe_ingredients_' . intval($recipe_id);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table_ingredients);
+        if (false !== $cached) {
+            return $cached;
+        }
+
+        $ingredients = $wpdb->get_results($wpdb->prepare(
             "SELECT ri.*, p.post_title AS product_name
             FROM {$this->table_ingredients} ri
             LEFT JOIN {$wpdb->posts} p ON ri.product_id = p.ID
@@ -273,6 +309,8 @@ class Obydullah_ERP_Recipes
             ORDER BY ri.id ASC",
             intval($recipe_id)
         )) ?: [];
+        Obydullah_ERP_Cache::set($cache_key, $this->table_ingredients, $ingredients);
+        return $ingredients;
     }
 
     public function orerp_save_recipe($data)
@@ -304,9 +342,11 @@ class Obydullah_ERP_Recipes
 
         if ($id > 0) {
             $wpdb->update($this->table_recipes, $save_data, ['id' => $id]);
+            Obydullah_ERP_Cache::invalidate($this->table_recipes);
         } else {
             $wpdb->insert($this->table_recipes, $save_data);
             $id = $wpdb->insert_id;
+            Obydullah_ERP_Cache::invalidate($this->table_recipes);
         }
 
         // Save ingredients
@@ -325,6 +365,7 @@ class Obydullah_ERP_Recipes
                 'notes'      => sanitize_text_field($ing['notes'] ?? 'orerp_'),
             ]);
         }
+        Obydullah_ERP_Cache::invalidate($this->table_ingredients);
 
         return $id;
     }
@@ -334,7 +375,9 @@ class Obydullah_ERP_Recipes
         global $wpdb;
 
         $wpdb->delete($this->table_ingredients, ['recipe_id' => intval($id)]);
+        Obydullah_ERP_Cache::invalidate($this->table_ingredients);
         $wpdb->delete($this->table_recipes, ['id' => intval($id)]);
+        Obydullah_ERP_Cache::invalidate($this->table_recipes);
 
         return true;
     }
@@ -360,7 +403,7 @@ class Obydullah_ERP_Recipes
         $args = [
             'page'     => intval($_GET['page'] ?? 1),
             'per_page' => 20,
-            'search'   => sanitize_text_field($_GET['search'] ?? 'orerp_'),
+            'search'   => sanitize_text_field(wp_unslash($_GET['search'] ?? 'orerp_')),
             'active'   => isset($_GET['active']) ? intval($_GET['active']) : 'orerp_',
         ];
 

@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Employees Management
  *
@@ -28,7 +29,7 @@ class Obydullah_ERP_Employees
 
     public function orerp_render_page()
     {
-        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list';
+        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
 
         if ($action === 'add' || $action === 'edit') {
             $this->orerp_render_form($action);
@@ -63,7 +64,7 @@ class Obydullah_ERP_Employees
     {
         $employee = null;
         if ($mode === 'edit') {
-            $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+            $id = isset($_GET['id']) ? intval($_GET['id']) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
             if ($id) {
                 $employee = $this->orerp_get_employee($id);
             }
@@ -212,7 +213,15 @@ class Obydullah_ERP_Employees
     private function orerp_get_branches_list()
     {
         global $wpdb;
-        return $wpdb->get_results("SELECT id, name, code FROM {$wpdb->prefix}erp_branches WHERE is_active = 1 ORDER BY name");
+        $table = $wpdb->prefix . 'erp_branches';
+        $cache_key = 'branches_active';
+        $cached = Obydullah_ERP_Cache::get($cache_key, $table);
+        if (false !== $cached) {
+            return $cached;
+        }
+        $results = $wpdb->get_results("SELECT id, name, code FROM {$table} WHERE is_active = 1 ORDER BY name");
+        Obydullah_ERP_Cache::set($cache_key, $table, $results);
+        return $results;
     }
 
     public function orerp_get_employees($args = [])
@@ -228,6 +237,13 @@ class Obydullah_ERP_Employees
         ];
 
         $args = wp_parse_args($args, $defaults);
+
+        $cache_key = 'employees_list_' . $args['page'] . '_' . $args['per_page'] . '_' . $args['search'] . '_' . $args['branch_id'] . '_' . $args['active'];
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false !== $cached) {
+            return $cached;
+        }
+
         $where = '1=1';
         $prepare_args = [];
 
@@ -266,24 +282,34 @@ class Obydullah_ERP_Employees
             array_merge($prepare_args, [$args['per_page'], $offset])
         ));
 
-        return [
+        $return = [
             'employees'    => $results ?: [],
             'total'        => $total,
             'total_pages'  => ceil($total / $args['per_page']),
             'current_page' => $args['page'],
         ];
+
+        Obydullah_ERP_Cache::set($cache_key, $this->table, $return);
+        return $return;
     }
 
     public function orerp_get_employee($id)
     {
         global $wpdb;
-        return $wpdb->get_row($wpdb->prepare(
+        $cache_key = 'employee_' . intval($id);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false !== $cached) {
+            return $cached;
+        }
+        $employee = $wpdb->get_row($wpdb->prepare(
             "SELECT e.*, b.name as branch_name
             FROM {$this->table} e
             LEFT JOIN {$wpdb->prefix}erp_branches b ON e.branch_id = b.id
             WHERE e.id = %d",
             intval($id)
         ));
+        Obydullah_ERP_Cache::set($cache_key, $this->table, $employee);
+        return $employee;
     }
 
     public function orerp_save_employee($data)
@@ -337,6 +363,8 @@ class Obydullah_ERP_Employees
             $id = $wpdb->insert_id;
         }
 
+        Obydullah_ERP_Cache::invalidate($this->table);
+
         if ($result === false) {
             return new WP_Error('save_failed', __('Failed to save employee.', 'obydullah-restaurant-erp'));
         }
@@ -356,6 +384,7 @@ class Obydullah_ERP_Employees
     {
         global $wpdb;
         $wpdb->delete($this->table, ['id' => intval($id)]);
+        Obydullah_ERP_Cache::invalidate($this->table);
         return true;
     }
 
@@ -444,6 +473,11 @@ class Obydullah_ERP_Employees
         }
 
         global $wpdb;
+        $cache_key = 'employees_all_active';
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false !== $cached) {
+            wp_send_json_success($cached);
+        }
         $employees = $wpdb->get_results(
             "SELECT e.id, e.employee_code, e.position, b.name as branch_name
             FROM {$this->table} e
@@ -451,7 +485,7 @@ class Obydullah_ERP_Employees
             WHERE e.is_active = 1
             ORDER BY e.employee_code"
         );
-
+        Obydullah_ERP_Cache::set($cache_key, $this->table, $employees);
         wp_send_json_success($employees);
     }
 }

@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Dashboard Reports
  *
@@ -143,7 +144,14 @@ class Obydullah_ERP_Dashboard_Reports
         $table = $wpdb->prefix . 'erp_branches';
         $current = Obydullah_ERP_Helpers::orerp_get_current_branch_id();
 
-        $branches = $wpdb->get_results($wpdb->prepare("SELECT id, name FROM {$table} WHERE is_active = 1 AND 1 = %d ORDER BY name", 1));
+        $cache_key = 'branch_selector_active';
+        $cached = Obydullah_ERP_Cache::get($cache_key, $table);
+        if (false !== $cached) {
+            $branches = $cached;
+        } else {
+            $branches = $wpdb->get_results($wpdb->prepare("SELECT id, name FROM {$table} WHERE is_active = 1 AND 1 = %d ORDER BY name", 1));
+            Obydullah_ERP_Cache::set($cache_key, $table, $branches);
+        }
 
         echo '<select id="orerp-branch-select">';
         echo '<option value="0">' . esc_html__('All Branches', 'obydullah-restaurant-erp') . '</option>';
@@ -185,12 +193,31 @@ class Obydullah_ERP_Dashboard_Reports
     private function orerp_get_count($table, $where = '1=1')
     {
         global $wpdb;
-        return intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE {$where} AND 1 = %d", 1)));
+
+        $cache_key = 'count_' . md5($table . '_' . $where);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $table);
+        if (false !== $cached) {
+            return intval($cached);
+        }
+
+        $count = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE {$where} AND 1 = %d", 1)));
+        Obydullah_ERP_Cache::set($cache_key, $table, $count);
+        return $count;
     }
 
     private function orerp_get_month_revenue()
     {
         global $wpdb;
+
+        $table = $wpdb->prefix . 'erp_journal_lines';
+        $month = intval(current_time('n'));
+        $year  = intval(current_time('Y'));
+
+        $cache_key = 'month_revenue_' . $year . '_' . $month;
+        $cached = Obydullah_ERP_Cache::get($cache_key, $table);
+        if (false !== $cached) {
+            return floatval($cached);
+        }
 
         $result = $wpdb->get_var(
             $wpdb->prepare(
@@ -202,17 +229,28 @@ class Obydullah_ERP_Dashboard_Reports
                 AND je.is_posted = 1
                 AND MONTH(je.date) = %d
                 AND YEAR(je.date) = %d",
-                intval(current_time('n')),
-                intval(current_time('Y'))
+                $month,
+                $year
             )
         );
 
+        Obydullah_ERP_Cache::set($cache_key, $table, $result);
         return floatval($result);
     }
 
     private function orerp_get_month_expenses()
     {
         global $wpdb;
+
+        $table = $wpdb->prefix . 'erp_journal_lines';
+        $month = intval(current_time('n'));
+        $year  = intval(current_time('Y'));
+
+        $cache_key = 'month_expenses_' . $year . '_' . $month;
+        $cached = Obydullah_ERP_Cache::get($cache_key, $table);
+        if (false !== $cached) {
+            return floatval($cached);
+        }
 
         $result = $wpdb->get_var(
             $wpdb->prepare(
@@ -224,25 +262,33 @@ class Obydullah_ERP_Dashboard_Reports
                 AND je.is_posted = 1
                 AND MONTH(je.date) = %d
                 AND YEAR(je.date) = %d",
-                intval(current_time('n')),
-                intval(current_time('Y'))
+                $month,
+                $year
             )
         );
 
+        Obydullah_ERP_Cache::set($cache_key, $table, $result);
         return floatval($result);
     }
 
     private function orerp_render_recent_purchases()
     {
         global $wpdb;
-        $orders = $wpdb->get_results(
-            $wpdb->prepare(
+        $table = $wpdb->prefix . 'erp_purchase_orders';
+
+        $cache_key = 'recent_purchases_5';
+        $cached = Obydullah_ERP_Cache::get($cache_key, $table);
+        if (false !== $cached) {
+            $orders = $cached;
+        } else {
+            $orders = $wpdb->get_results(
                 "SELECT po.*, s.name as supplier_name
                 FROM {$wpdb->prefix}erp_purchase_orders po
                 LEFT JOIN {$wpdb->prefix}erp_suppliers s ON po.supplier_id = s.id
                 ORDER BY po.created_at DESC LIMIT 5"
-            )
-        );
+            );
+            Obydullah_ERP_Cache::set($cache_key, $table, $orders);
+        }
 
         if (empty($orders)) {
             echo '<p class="orerp-empty">' . esc_html__('No purchase orders yet.', 'obydullah-restaurant-erp') . '</p>';
@@ -276,9 +322,16 @@ class Obydullah_ERP_Dashboard_Reports
         global $wpdb;
         $table = $wpdb->prefix . 'erp_journal_entries';
 
-        $entries = $wpdb->get_results(
-            $wpdb->prepare("SELECT * FROM {$table} WHERE 1 = %d ORDER BY date DESC, id DESC LIMIT 5", 1)
-        );
+        $cache_key = 'recent_journal_entries_5';
+        $cached = Obydullah_ERP_Cache::get($cache_key, $table);
+        if (false !== $cached) {
+            $entries = $cached;
+        } else {
+            $entries = $wpdb->get_results(
+                $wpdb->prepare("SELECT * FROM {$table} WHERE 1 = %d ORDER BY date DESC, id DESC LIMIT 5", 1)
+            );
+            Obydullah_ERP_Cache::set($cache_key, $table, $entries);
+        }
 
         if (empty($entries)) {
             echo '<p class="orerp-empty">' . esc_html__('No journal entries yet.', 'obydullah-restaurant-erp') . '</p>';

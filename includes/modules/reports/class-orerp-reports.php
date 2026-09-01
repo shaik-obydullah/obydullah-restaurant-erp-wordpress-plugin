@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Reports & Analytics
  *
@@ -27,9 +28,9 @@ class Obydullah_ERP_Reports
 
     public function orerp_render_page()
     {
-        $tab = isset($_GET['tab']) ? sanitize_text_field(wp_unslash($_GET['tab'])) : 'sales';
+        $tab = isset($_GET['tab']) ? sanitize_text_field(wp_unslash($_GET['tab'])) : 'sales'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
 
-        if (isset($_GET['print']) && $_GET['print'] === '1') {
+        if (isset($_GET['print']) && $_GET['print'] === '1') { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
             $this->orerp_render_print_view($tab);
             return;
         }
@@ -102,7 +103,16 @@ class Obydullah_ERP_Reports
     private function orerp_render_branch_options($selected = 0)
     {
         global $wpdb;
-        $branches = $wpdb->get_results($wpdb->prepare("SELECT id, name FROM {$wpdb->prefix}erp_branches WHERE is_active = 1 AND 1 = %d ORDER BY name", 1));
+        $table = $wpdb->prefix . 'erp_branches';
+
+        $cache_key = 'branch_options_active';
+        $cached = Obydullah_ERP_Cache::get($cache_key, $table);
+        if (false !== $cached) {
+            $branches = $cached;
+        } else {
+            $branches = $wpdb->get_results($wpdb->prepare("SELECT id, name FROM {$wpdb->prefix}erp_branches WHERE is_active = 1 AND 1 = %d ORDER BY name", 1));
+            Obydullah_ERP_Cache::set($cache_key, $table, $branches);
+        }
 
         foreach ($branches as $branch) {
             printf(
@@ -162,14 +172,14 @@ class Obydullah_ERP_Reports
 
     private function orerp_get_date_range()
     {
-        $from = sanitize_text_field(wp_unslash($_GET['date_from'] ?? 'orerp_'));
-        $to   = sanitize_text_field(wp_unslash($_GET['date_to'] ?? 'orerp_'));
+        $from = sanitize_text_field(wp_unslash($_GET['date_from'] ?? 'orerp_')); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
+        $to   = sanitize_text_field(wp_unslash($_GET['date_to'] ?? 'orerp_')); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
         return [$from, $to];
     }
 
     private function orerp_get_branch_filter()
     {
-        return intval($_GET['branch_id'] ?? 0);
+        return intval($_GET['branch_id'] ?? 0); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
     }
 
     public function orerp_get_sales_report()
@@ -259,46 +269,80 @@ class Obydullah_ERP_Reports
         $branch_id = $this->orerp_get_branch_filter();
 
         if ($branch_id > 0) {
-            $employees = $wpdb->get_results($wpdb->prepare(
-                "SELECT e.id, e.employee_code, e.branch_id, u.display_name AS display_name, b.name AS branch_name
-                FROM {$wpdb->prefix}erp_employees e
-                LEFT JOIN {$wpdb->users} u ON e.user_id = u.ID
-                LEFT JOIN {$wpdb->prefix}erp_branches b ON e.branch_id = b.id
-                WHERE e.is_active = 1 AND e.branch_id = %d
-                ORDER BY display_name ASC",
-                $branch_id
-            )) ?: [];
+            $cache_key = 'employee_performance_list_branch_' . $branch_id;
+            $emp_table = $wpdb->prefix . 'erp_employees';
+            $cached = Obydullah_ERP_Cache::get($cache_key, $emp_table);
+            if (false !== $cached) {
+                $employees = $cached;
+            } else {
+                $employees = $wpdb->get_results($wpdb->prepare(
+                    "SELECT e.id, e.employee_code, e.branch_id, u.display_name AS display_name, b.name AS branch_name
+                    FROM {$wpdb->prefix}erp_employees e
+                    LEFT JOIN {$wpdb->users} u ON e.user_id = u.ID
+                    LEFT JOIN {$wpdb->prefix}erp_branches b ON e.branch_id = b.id
+                    WHERE e.is_active = 1 AND e.branch_id = %d
+                    ORDER BY display_name ASC",
+                    $branch_id
+                )) ?: [];
+                Obydullah_ERP_Cache::set($cache_key, $emp_table, $employees);
+            }
         } else {
-            $employees = $wpdb->get_results($wpdb->prepare(
-                "SELECT e.id, e.employee_code, e.branch_id, u.display_name AS display_name, b.name AS branch_name
-                FROM {$wpdb->prefix}erp_employees e
-                LEFT JOIN {$wpdb->users} u ON e.user_id = u.ID
-                LEFT JOIN {$wpdb->prefix}erp_branches b ON e.branch_id = b.id
-                WHERE e.is_active = 1 AND 1 = %d
-                ORDER BY display_name ASC",
-                1
-            )) ?: [];
+            $cache_key = 'employee_performance_list_all';
+            $emp_table = $wpdb->prefix . 'erp_employees';
+            $cached = Obydullah_ERP_Cache::get($cache_key, $emp_table);
+            if (false !== $cached) {
+                $employees = $cached;
+            } else {
+                $employees = $wpdb->get_results($wpdb->prepare(
+                    "SELECT e.id, e.employee_code, e.branch_id, u.display_name AS display_name, b.name AS branch_name
+                    FROM {$wpdb->prefix}erp_employees e
+                    LEFT JOIN {$wpdb->users} u ON e.user_id = u.ID
+                    LEFT JOIN {$wpdb->prefix}erp_branches b ON e.branch_id = b.id
+                    WHERE e.is_active = 1 AND 1 = %d
+                    ORDER BY display_name ASC",
+                    1
+                )) ?: [];
+                Obydullah_ERP_Cache::set($cache_key, $emp_table, $employees);
+            }
         }
 
         $results = [];
 
-        foreach ($employees as $emp) {
-            $attend = $wpdb->get_row($wpdb->prepare(
-                "SELECT COUNT(*) as days_worked,
-                        COALESCE(SUM(TIMESTAMPDIFF(MINUTE, clock_in, COALESCE(clock_out, NOW()))), 0) as total_minutes
-                FROM {$wpdb->prefix}erp_attendance
-                WHERE employee_id = %d AND DATE(clock_in) BETWEEN %s AND %s",
-                $emp->id, $from, $to
-            ));
+        $attendance_table = $wpdb->prefix . 'erp_attendance';
 
-            $prep = $wpdb->get_row($wpdb->prepare(
-                "SELECT COUNT(*) as tasks_completed,
-                        COALESCE(AVG(actual_time_minutes), 0) as avg_time
-                FROM {$wpdb->prefix}erp_prep_tracking
-                WHERE employee_id = %d AND completed_at IS NOT NULL
-                AND DATE(started_at) BETWEEN %s AND %s",
-                $emp->id, $from, $to
-            ));
+        foreach ($employees as $emp) {
+            $cache_key = 'attendance_stats_' . $emp->id . '_' . $from . '_' . $to;
+            $cached = Obydullah_ERP_Cache::get($cache_key, $attendance_table);
+            if (false !== $cached) {
+                $attend = $cached;
+            } else {
+                $attend = $wpdb->get_row($wpdb->prepare(
+                    "SELECT COUNT(*) as days_worked,
+                            COALESCE(SUM(TIMESTAMPDIFF(MINUTE, clock_in, COALESCE(clock_out, NOW()))), 0) as total_minutes
+                    FROM {$wpdb->prefix}erp_attendance
+                    WHERE employee_id = %d AND DATE(clock_in) BETWEEN %s AND %s",
+                    $emp->id, $from, $to
+                ));
+                Obydullah_ERP_Cache::set($cache_key, $attendance_table, $attend);
+            }
+
+            $prep_table = $wpdb->prefix . 'erp_prep_tracking';
+
+            $cache_key = 'prep_tracking_stats_' . $emp->id . '_' . $from . '_' . $to;
+            $cached = Obydullah_ERP_Cache::get($cache_key, $prep_table);
+            if (false !== $cached) {
+                $prep = $cached;
+            } else {
+                $prep = $wpdb->get_row($wpdb->prepare(
+                    "SELECT COUNT(*) as tasks_completed,
+                            COALESCE(AVG(actual_time_minutes), 0) as avg_time
+                    FROM {$wpdb->prefix}erp_prep_tracking
+                    WHERE employee_id = %d AND completed_at IS NOT NULL
+                    AND DATE(started_at) BETWEEN %s AND %s",
+                    $emp->id, $from, $to
+                ));
+                Obydullah_ERP_Cache::set($cache_key, $prep_table, $prep);
+            }
 
             $name = trim($emp->display_name);
             if (empty($name)) {

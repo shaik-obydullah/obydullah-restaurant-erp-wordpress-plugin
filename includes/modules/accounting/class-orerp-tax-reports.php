@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Tax Reports - VAT / GST
  *
@@ -106,16 +107,27 @@ class Obydullah_ERP_Tax_Reports
     {
         global $wpdb;
 
-        $vat_account = $wpdb->get_var($wpdb->prepare(
-            "SELECT id FROM {$this->table_accounts} WHERE code = %s LIMIT 1",
-            '2300'
-        ));
+        $cache_key_vat_account = 'vat_account_2300';
+        $vat_account = Obydullah_ERP_Cache::get($cache_key_vat_account, $this->table_accounts);
+        if (false === $vat_account) {
+            $vat_account = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$this->table_accounts} WHERE code = %s LIMIT 1",
+                '2300'
+            ));
+            Obydullah_ERP_Cache::set($cache_key_vat_account, $this->table_accounts, $vat_account);
+        }
 
         if (!$vat_account) {
             return 0;
         }
 
-        return floatval($wpdb->get_var($wpdb->prepare(
+        $cache_key = 'output_vat_' . sanitize_key($from . '_' . $to);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table_lines);
+        if (false !== $cached) {
+            return $cached;
+        }
+
+        $total = floatval($wpdb->get_var($wpdb->prepare(
             "SELECT COALESCE(SUM(jl.credit), 0)
             FROM {$this->table_lines} jl
             INNER JOIN {$this->table_entries} je ON jl.entry_id = je.id
@@ -123,6 +135,9 @@ class Obydullah_ERP_Tax_Reports
                 AND je.date BETWEEN %s AND %s",
             intval($vat_account), $from, $to
         )));
+
+        Obydullah_ERP_Cache::set($cache_key, $this->table_lines, $total);
+        return $total;
     }
 
     /**
@@ -136,13 +151,22 @@ class Obydullah_ERP_Tax_Reports
     {
         global $wpdb;
 
-        return floatval($wpdb->get_var($wpdb->prepare(
+        $cache_key = 'input_vat_' . sanitize_key($from . '_' . $to);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table_orders);
+        if (false !== $cached) {
+            return $cached;
+        }
+
+        $total = floatval($wpdb->get_var($wpdb->prepare(
             "SELECT COALESCE(SUM(tax_amount), 0)
             FROM {$this->table_orders}
             WHERE status != 'cancelled'
                 AND DATE(created_at) BETWEEN %s AND %s",
             $from, $to
         )));
+
+        Obydullah_ERP_Cache::set($cache_key, $this->table_orders, $total);
+        return $total;
     }
 
     /**
@@ -160,23 +184,36 @@ class Obydullah_ERP_Tax_Reports
         $to   = Obydullah_ERP_Helpers::orerp_is_valid_date($to) ? $to : gmdate('Y-m-d');
 
         $output_by_month = [];
-        $vat_account = $wpdb->get_var($wpdb->prepare(
-            "SELECT id FROM {$this->table_accounts} WHERE code = %s LIMIT 1",
-            '2300'
-        ));
+        $cache_key_vat_account = 'vat_account_2300';
+        $vat_account = Obydullah_ERP_Cache::get($cache_key_vat_account, $this->table_accounts);
+        if (false === $vat_account) {
+            $vat_account = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$this->table_accounts} WHERE code = %s LIMIT 1",
+                '2300'
+            ));
+            Obydullah_ERP_Cache::set($cache_key_vat_account, $this->table_accounts, $vat_account);
+        }
 
         if ($vat_account) {
-            $rows = $wpdb->get_results($wpdb->prepare(
-                "SELECT DATE_FORMAT(je.date, '%%Y-%%m') AS month, COALESCE(SUM(jl.credit), 0) AS total
-                FROM {$this->table_lines} jl
-                INNER JOIN {$this->table_entries} je ON jl.entry_id = je.id
-                WHERE jl.account_id = %d AND je.is_posted = 1
-                    AND je.date BETWEEN %s AND %s
-                GROUP BY month",
-                intval($vat_account),
-                $from,
-                $to
-            )) ?: [];
+            $cache_key_output = 'vat_output_by_month_' . sanitize_key($from . '_' . $to);
+            $cached_output = Obydullah_ERP_Cache::get($cache_key_output, $this->table_lines);
+            if (false !== $cached_output) {
+                $rows = $cached_output;
+            } else {
+                $rows = $wpdb->get_results($wpdb->prepare(
+                    "SELECT DATE_FORMAT(je.date, '%%Y-%%m') AS month, COALESCE(SUM(jl.credit), 0) AS total
+                    FROM {$this->table_lines} jl
+                    INNER JOIN {$this->table_entries} je ON jl.entry_id = je.id
+                    WHERE jl.account_id = %d AND je.is_posted = 1
+                        AND je.date BETWEEN %s AND %s
+                    GROUP BY month",
+                    intval($vat_account),
+                    $from,
+                    $to
+                ));
+                Obydullah_ERP_Cache::set($cache_key_output, $this->table_lines, $rows);
+            }
+            $rows = $rows ?: [];
 
             foreach ($rows as $row) {
                 $output_by_month[$row->month] = floatval($row->total);
@@ -184,14 +221,22 @@ class Obydullah_ERP_Tax_Reports
         }
 
         $input_by_month = [];
-        $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT DATE_FORMAT(created_at, '%%Y-%%m') AS month, COALESCE(SUM(tax_amount), 0) AS total
-            FROM {$this->table_orders}
-            WHERE status != 'cancelled' AND DATE(created_at) BETWEEN %s AND %s
-            GROUP BY month",
-            $from,
-            $to
-        )) ?: [];
+        $cache_key_input = 'vat_input_by_month_' . sanitize_key($from . '_' . $to);
+        $cached_input = Obydullah_ERP_Cache::get($cache_key_input, $this->table_orders);
+        if (false !== $cached_input) {
+            $rows = $cached_input;
+        } else {
+            $rows = $wpdb->get_results($wpdb->prepare(
+                "SELECT DATE_FORMAT(created_at, '%%Y-%%m') AS month, COALESCE(SUM(tax_amount), 0) AS total
+                FROM {$this->table_orders}
+                WHERE status != 'cancelled' AND DATE(created_at) BETWEEN %s AND %s
+                GROUP BY month",
+                $from,
+                $to
+            ));
+            Obydullah_ERP_Cache::set($cache_key_input, $this->table_orders, $rows);
+        }
+        $rows = $rows ?: [];
 
         foreach ($rows as $row) {
             $input_by_month[$row->month] = floatval($row->total);

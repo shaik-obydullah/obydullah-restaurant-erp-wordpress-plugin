@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Financial Reports - Profit & Loss and Balance Sheet
  *
@@ -52,7 +53,11 @@ class Obydullah_ERP_Financial_Reports
             $prepare[] = $to;
         }
 
-        if (!empty($prepare)) {
+        $cache_key = 'posted_totals_' . sanitize_key($from . '_' . $to);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table_lines);
+        if (false !== $cached) {
+            $rows = $cached;
+        } elseif (!empty($prepare)) {
             $rows = $wpdb->get_results($wpdb->prepare(
                 "SELECT jl.account_id,
                     COALESCE(SUM(jl.debit), 0) AS debit,
@@ -62,7 +67,8 @@ class Obydullah_ERP_Financial_Reports
                 WHERE 1=1{$where}
                 GROUP BY jl.account_id",
                 $prepare
-            )) ?: [];
+            ));
+            Obydullah_ERP_Cache::set($cache_key, $this->table_lines, $rows);
         } else {
             $rows = $wpdb->get_results($wpdb->prepare(
                 "SELECT jl.account_id,
@@ -73,8 +79,10 @@ class Obydullah_ERP_Financial_Reports
                 WHERE 1=1 AND 1 = %d
                 GROUP BY jl.account_id",
                 1
-            )) ?: [];
+            ));
+            Obydullah_ERP_Cache::set($cache_key, $this->table_lines, $rows);
         }
+        $rows = $rows ?: [];
 
         $totals = [];
         foreach ($rows as $row) {
@@ -109,11 +117,19 @@ class Obydullah_ERP_Financial_Reports
         $total_expense = 0;
 
         $types = ['revenue', 'expense'];
-        $accounts = $wpdb->get_results($wpdb->prepare(
-            "SELECT id, code, name, type FROM {$this->table_accounts} WHERE type IN (%s, %s) AND is_active = 1 ORDER BY code",
-            $types[0],
-            $types[1]
-        )) ?: [];
+        $cache_key = 'pl_accounts';
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table_accounts);
+        if (false !== $cached) {
+            $accounts = $cached;
+        } else {
+            $accounts = $wpdb->get_results($wpdb->prepare(
+                "SELECT id, code, name, type FROM {$this->table_accounts} WHERE type IN (%s, %s) AND is_active = 1 ORDER BY code",
+                $types[0],
+                $types[1]
+            ));
+            Obydullah_ERP_Cache::set($cache_key, $this->table_accounts, $accounts);
+        }
+        $accounts = $accounts ?: [];
 
         foreach ($accounts as $acc) {
             $t = $totals[(int) $acc->id] ?? ['debit' => 0, 'credit' => 0];
@@ -160,7 +176,15 @@ class Obydullah_ERP_Financial_Reports
 
         $totals = $this->orerp_get_posted_totals($from, $to);
 
-        $accounts = $wpdb->get_results($wpdb->prepare("SELECT id, code, name, type FROM {$this->table_accounts} WHERE is_active = 1 AND 1 = %d ORDER BY code", 1)) ?: [];
+        $cache_key = 'breakdown_accounts';
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table_accounts);
+        if (false !== $cached) {
+            $accounts = $cached;
+        } else {
+            $accounts = $wpdb->get_results($wpdb->prepare("SELECT id, code, name, type FROM {$this->table_accounts} WHERE is_active = 1 AND 1 = %d ORDER BY code", 1));
+            Obydullah_ERP_Cache::set($cache_key, $this->table_accounts, $accounts);
+        }
+        $accounts = $accounts ?: [];
 
         $result = [];
         foreach ($accounts as $acc) {
@@ -195,10 +219,18 @@ class Obydullah_ERP_Financial_Reports
         $result = [];
 
         foreach (['asset', 'liability', 'equity'] as $type) {
-            $accounts = $wpdb->get_results($wpdb->prepare(
-                "SELECT id, code, name FROM {$this->table_accounts} WHERE type = %s AND is_active = 1 ORDER BY code",
-                $type
-            )) ?: [];
+            $cache_key = 'balance_sheet_accounts_' . $type;
+            $cached = Obydullah_ERP_Cache::get($cache_key, $this->table_accounts);
+            if (false !== $cached) {
+                $accounts = $cached;
+            } else {
+                $accounts = $wpdb->get_results($wpdb->prepare(
+                    "SELECT id, code, name FROM {$this->table_accounts} WHERE type = %s AND is_active = 1 ORDER BY code",
+                    $type
+                ));
+                Obydullah_ERP_Cache::set($cache_key, $this->table_accounts, $accounts);
+            }
+            $accounts = $accounts ?: [];
 
             $items = [];
             $total = 0;

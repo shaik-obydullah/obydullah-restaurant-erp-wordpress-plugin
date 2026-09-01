@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Branches Management
  *
@@ -28,7 +29,7 @@ class Obydullah_ERP_Branches
 
     public function orerp_render_page()
     {
-        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list';
+        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
 
         if ($action === 'add' || $action === 'edit') {
             $this->orerp_render_form($action);
@@ -64,7 +65,7 @@ class Obydullah_ERP_Branches
         $branch = null;
 
         if ($mode === 'edit') {
-            $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+            $id = isset($_GET['id']) ? intval($_GET['id']) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
             if ($id) {
                 $branch = $this->orerp_get_branch($id);
             }
@@ -175,6 +176,12 @@ class Obydullah_ERP_Branches
 
         $args = wp_parse_args($args, $defaults);
 
+        $cache_key = 'branches_list_' . $args['page'] . '_' . $args['per_page'] . '_' . $args['search'] . '_' . $args['active'] . '_' . $args['orderby'] . '_' . $args['order'];
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false !== $cached) {
+            return $cached;
+        }
+
         $where = '1=1';
         $prepare_args = [];
 
@@ -210,19 +217,29 @@ class Obydullah_ERP_Branches
             array_merge($prepare_args, [$args['per_page'], $offset])
         ));
 
-        return [
+        $return = [
             'branches'     => $results ?: [],
             'total'        => $total,
             'total_pages'  => ceil($total / $args['per_page']),
             'current_page' => $args['page'],
             'per_page'     => $args['per_page'],
         ];
+
+        Obydullah_ERP_Cache::set($cache_key, $this->table, $return);
+        return $return;
     }
 
     public function orerp_get_branch($id)
     {
         global $wpdb;
-        return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", intval($id)));
+        $cache_key = 'branch_' . intval($id);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false !== $cached) {
+            return $cached;
+        }
+        $branch = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", intval($id)));
+        Obydullah_ERP_Cache::set($cache_key, $this->table, $branch);
+        return $branch;
     }
 
     public function orerp_save_branch($data)
@@ -269,6 +286,8 @@ class Obydullah_ERP_Branches
             $id = $wpdb->insert_id;
         }
 
+        Obydullah_ERP_Cache::invalidate($this->table);
+
         if ($result === false) {
             return new WP_Error('save_failed', __('Failed to save branch.', 'obydullah-restaurant-erp'));
         }
@@ -293,6 +312,9 @@ class Obydullah_ERP_Branches
 
         $result = $wpdb->delete($this->table, ['id' => $id]);
         $wpdb->delete($stock_table, ['branch_id' => $id]);
+
+        Obydullah_ERP_Cache::invalidate($this->table);
+        Obydullah_ERP_Cache::invalidate($stock_table);
 
         return $result !== false;
     }
@@ -401,7 +423,14 @@ class Obydullah_ERP_Branches
     public function orerp_get_all_active()
     {
         global $wpdb;
-        return $wpdb->get_results("SELECT id, name, code FROM {$this->table} WHERE is_active = 1 ORDER BY name");
+        $cache_key = 'branches_all_active';
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false !== $cached) {
+            return $cached;
+        }
+        $results = $wpdb->get_results("SELECT id, name, code FROM {$this->table} WHERE is_active = 1 ORDER BY name");
+        Obydullah_ERP_Cache::set($cache_key, $this->table, $results);
+        return $results;
     }
 
     public function orerp_get_branch_stock($branch_id, $args = [])
@@ -411,6 +440,12 @@ class Obydullah_ERP_Branches
         $stock_table = $wpdb->prefix . 'erp_branch_stock';
         $defaults = ['per_page' => 20, 'page' => 1, 'search' => 'orerp_'];
         $args = wp_parse_args($args, $defaults);
+
+        $cache_key = 'branch_stock_' . $branch_id . '_' . $args['page'] . '_' . $args['per_page'] . '_' . $args['search'];
+        $cached = Obydullah_ERP_Cache::get($cache_key, $stock_table);
+        if (false !== $cached) {
+            return $cached;
+        }
 
         $where = 'bs.branch_id = %d';
         $prepare_args = [$branch_id];
@@ -437,12 +472,15 @@ class Obydullah_ERP_Branches
             array_merge($prepare_args, [$args['per_page'], $offset])
         ));
 
-        return [
+        $return = [
             'stock'        => $results ?: [],
             'total'        => $total,
             'total_pages'  => ceil($total / $args['per_page']),
             'current_page' => $args['page'],
         ];
+
+        Obydullah_ERP_Cache::set($cache_key, $stock_table, $return);
+        return $return;
     }
 
     public function orerp_update_branch_stock($branch_id, $product_id, $quantity, $note = 'orerp_')
@@ -476,6 +514,8 @@ class Obydullah_ERP_Branches
                 'last_restocked'  => current_time('mysql'),
             ]);
         }
+
+        Obydullah_ERP_Cache::invalidate($stock_table);
 
         return ['old_qty' => $old_qty, 'new_qty' => $new_qty];
     }

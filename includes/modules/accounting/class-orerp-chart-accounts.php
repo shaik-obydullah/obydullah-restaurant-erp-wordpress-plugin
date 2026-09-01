@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- SQL table names come from $wpdb->prefix and every value is bound via $wpdb->prepare() placeholders; direct queries are used for the ERP-specific tables that have no core caching API.
 /**
  * Chart of Accounts
  *
@@ -27,7 +28,7 @@ class Obydullah_ERP_Chart_Accounts
 
     public function orerp_render_page()
     {
-        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list';
+        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : 'list'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
 
         if ($action === 'add' || $action === 'edit') {
             $this->orerp_render_form($action);
@@ -75,7 +76,7 @@ class Obydullah_ERP_Chart_Accounts
     {
         $account = null;
         if ($mode === 'edit') {
-            $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+            $id = isset($_GET['id']) ? intval($_GET['id']) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
             if ($id) {
                 $account = $this->orerp_get_account($id);
             }
@@ -158,10 +159,16 @@ class Obydullah_ERP_Chart_Accounts
     private function orerp_render_parent_options($selected = 0, $exclude = 0)
     {
         global $wpdb;
-        $accounts = $wpdb->get_results(
-            "SELECT id, code, name FROM {$this->table} WHERE is_active = 1 AND id != %d ORDER BY code",
-            intval($exclude)
-        );
+        $cache_key = 'parent_options_' . intval($exclude);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false === $cached) {
+            $cached = $wpdb->get_results($wpdb->prepare(
+                "SELECT id, code, name FROM {$this->table} WHERE is_active = 1 AND id != %d ORDER BY code",
+                intval($exclude)
+            ));
+            Obydullah_ERP_Cache::set($cache_key, $this->table, $cached);
+        }
+        $accounts = $cached;
 
         foreach ($accounts as $acc) {
             printf(
@@ -194,18 +201,33 @@ class Obydullah_ERP_Chart_Accounts
             $prepare_args[] = intval($args['active']);
         }
 
+        $page = $args['page'] ?? 1;
         if ($args['per_page'] > 0) {
-            $offset = (($args['page'] ?? 1) - 1) * $args['per_page'];
-            if (!empty($prepare_args)) {
-                $results = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$this->table} WHERE {$where} ORDER BY code ASC LIMIT " . intval($args['per_page']) . " OFFSET " . intval($offset), $prepare_args));
+            $offset = ($page - 1) * $args['per_page'];
+            $cache_key = 'accounts_list_' . sanitize_key(implode('_', [$args['per_page'], $offset, $args['type'], $args['active']]));
+            $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+            if (false !== $cached) {
+                $results = $cached;
             } else {
-                $results = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$this->table} WHERE 1 = %d ORDER BY code ASC LIMIT " . intval($args['per_page']) . " OFFSET " . intval($offset), 1));
+                if (!empty($prepare_args)) {
+                    $results = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$this->table} WHERE {$where} ORDER BY code ASC LIMIT " . intval($args['per_page']) . " OFFSET " . intval($offset), $prepare_args));
+                } else {
+                    $results = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$this->table} WHERE 1 = %d ORDER BY code ASC LIMIT " . intval($args['per_page']) . " OFFSET " . intval($offset), 1));
+                }
+                Obydullah_ERP_Cache::set($cache_key, $this->table, $results);
             }
         } else {
-            if (!empty($prepare_args)) {
-                $results = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$this->table} WHERE {$where} ORDER BY code ASC", $prepare_args));
+            $cache_key = 'accounts_list_' . sanitize_key(implode('_', ['all', $args['type'], $args['active']]));
+            $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+            if (false !== $cached) {
+                $results = $cached;
             } else {
-                $results = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$this->table} WHERE 1 = %d ORDER BY code ASC", 1));
+                if (!empty($prepare_args)) {
+                    $results = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$this->table} WHERE {$where} ORDER BY code ASC", $prepare_args));
+                } else {
+                    $results = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$this->table} WHERE 1 = %d ORDER BY code ASC", 1));
+                }
+                Obydullah_ERP_Cache::set($cache_key, $this->table, $results);
             }
         }
 
@@ -215,13 +237,32 @@ class Obydullah_ERP_Chart_Accounts
     public function orerp_get_account($id)
     {
         global $wpdb;
-        return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", intval($id)));
+        $id = intval($id);
+        $cache_key = 'account_' . $id;
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false !== $cached) {
+            return $cached;
+        }
+        $account = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $id));
+        if (null !== $account) {
+            Obydullah_ERP_Cache::set($cache_key, $this->table, $account);
+        }
+        return $account;
     }
 
     public function orerp_get_account_by_code($code)
     {
         global $wpdb;
-        return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE code = %s", $code));
+        $cache_key = 'account_by_code_' . sanitize_key($code);
+        $cached = Obydullah_ERP_Cache::get($cache_key, $this->table);
+        if (false !== $cached) {
+            return $cached;
+        }
+        $account = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE code = %s", $code));
+        if (null !== $account) {
+            Obydullah_ERP_Cache::set($cache_key, $this->table, $account);
+        }
+        return $account;
     }
 
     public function orerp_save_account($data)
@@ -257,6 +298,8 @@ class Obydullah_ERP_Chart_Accounts
             $id = $wpdb->insert_id;
         }
 
+        Obydullah_ERP_Cache::invalidate($this->table);
+
         return $result !== false ? $id : new WP_Error('save_failed', __('Failed to save account.', 'obydullah-restaurant-erp'));
     }
 
@@ -275,25 +318,35 @@ class Obydullah_ERP_Chart_Accounts
         }
 
         $wpdb->delete($this->table, ['id' => intval($id)]);
+        Obydullah_ERP_Cache::invalidate($this->table);
         return true;
     }
 
     public function orerp_get_account_balance($account_id)
     {
         global $wpdb;
-
+        $account_id = intval($account_id);
+        $lines_table = $wpdb->prefix . 'erp_journal_lines';
+        $cache_key = 'account_balance_' . $account_id;
+        $cached = Obydullah_ERP_Cache::get($cache_key, $lines_table);
+        if (false !== $cached) {
+            return $cached;
+        }
         $result = $wpdb->get_row($wpdb->prepare(
             "SELECT COALESCE(SUM(jl.debit), 0) as total_debit, COALESCE(SUM(jl.credit), 0) as total_credit
             FROM {$wpdb->prefix}erp_journal_lines jl
             JOIN {$wpdb->prefix}erp_journal_entries je ON jl.entry_id = je.id
             WHERE jl.account_id = %d AND je.is_posted = 1",
-            intval($account_id)
+            $account_id
         ));
 
         $debit = floatval($result->total_debit);
         $credit = floatval($result->total_credit);
 
-        return ['debit' => $debit, 'credit' => $credit, 'balance' => $debit - $credit];
+        $balance = ['debit' => $debit, 'credit' => $credit, 'balance' => $debit - $credit];
+        Obydullah_ERP_Cache::set($cache_key, $lines_table, $balance);
+
+        return $balance;
     }
 
     public function orerp_get_trial_balance()

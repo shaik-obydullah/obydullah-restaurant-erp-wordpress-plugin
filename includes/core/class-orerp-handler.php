@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 $orerp_core_files = [
     'class-orerp-helpers.php',
     'class-orerp-integration.php',
+    'class-orerp-cache.php',
 ];
 
 foreach ($orerp_core_files as $orerp_file) {
@@ -259,7 +260,7 @@ if (!class_exists('Obydullah_ERP_Handler')) {
 
         public function orerp_enqueue_admin_scripts($hook)
         {
-            $current_page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : 'orerp_';
+            $current_page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : 'orerp_'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
 
             if (strpos($hook, 'orerp-') === false && strpos($current_page, 'orerp-') === false) {
                 return;
