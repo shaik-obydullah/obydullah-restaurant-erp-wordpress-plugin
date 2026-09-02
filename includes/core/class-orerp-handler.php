@@ -275,7 +275,7 @@ if (!class_exists('Obydullah_ERP_Handler')) {
 
             wp_enqueue_script(
                 'orerp-admin-js',
-                ORERP_URL . 'assets/js/orerp-admin.js',
+                ORERP_URL . 'assets/js/orerp-erp-admin.js',
                 ['jquery'],
                 ORERP_VERSION,
                 true

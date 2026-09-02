@@ -186,13 +186,13 @@ class Obydullah_ERP_Reports
     {
         list($from, $to) = $this->orerp_get_date_range();
         $sales = new Obydullah_ERP_Sales_Reports();
-        return $sales->get_sales_report($from, $to, $this->orerp_get_branch_filter());
+        return $sales->orerp_get_sales_report($from, $to, $this->orerp_get_branch_filter());
     }
 
     public function orerp_get_inventory_report()
     {
         $inventory = new Obydullah_ERP_Inventory_Reports();
-        return $inventory->get_inventory_report($this->orerp_get_branch_filter());
+        return $inventory->orerp_get_inventory_report($this->orerp_get_branch_filter());
     }
 
     public function orerp_get_financial_report()
@@ -200,7 +200,7 @@ class Obydullah_ERP_Reports
         list($from, $to) = $this->orerp_get_date_range();
 
         $financial = new Obydullah_ERP_Financial_Reports();
-        $accounts = $financial->get_account_breakdown($from, $to);
+        $accounts = $financial->orerp_get_account_breakdown($from, $to);
 
         $revenue = [];
         $expenses = [];
@@ -258,7 +258,7 @@ class Obydullah_ERP_Reports
     {
         list($from, $to) = $this->orerp_get_date_range();
         $branches = new Obydullah_ERP_Branch_Reports();
-        return $branches->get_branch_comparison($from, $to);
+        return $branches->orerp_get_branch_comparison($from, $to);
     }
 
     public function orerp_get_employee_performance()

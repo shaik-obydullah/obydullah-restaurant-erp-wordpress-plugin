@@ -13,6 +13,19 @@ if (!defined('ABSPATH')) {
 
 class Obydullah_ERP_Helpers
 {
+    public static function can($capability)
+    {
+        if (current_user_can('manage_options')) {
+            return true;
+        }
+
+        if (empty($capability)) {
+            return false;
+        }
+
+        return current_user_can($capability);
+    }
+
     public static function orerp_get_settings()
     {
         return [
