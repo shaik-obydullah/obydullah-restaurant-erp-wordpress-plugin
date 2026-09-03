@@ -29,6 +29,7 @@ class Obydullah_ERP_Activator
         self::orerp_create_kitchen_tables($charset_collate);
 
         self::orerp_seed_default_data();
+        self::orerp_migrate_schema();
 
         update_option('orerp_version', ORERP_VERSION);
 
@@ -37,6 +38,50 @@ class Obydullah_ERP_Activator
         }
 
         flush_rewrite_rules();
+    }
+
+    /**
+     * Apply schema migrations to existing installations without requiring
+     * a full deactivate/reactivate. Runs on every plugins_loaded and is a
+     * no-op once the target schema version is reached.
+     *
+     * @return void
+     */
+    public static function orerp_maybe_upgrade()
+    {
+        $db_version = intval(get_option('orerp_db_version', 0));
+
+        if ($db_version < 1) {
+            global $wpdb;
+            $table = $wpdb->prefix . 'erp_journal_entries';
+
+            $column = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = 'branch_id'",
+                DB_NAME,
+                $table
+            ));
+
+            if (intval($column) === 0) {
+                $wpdb->query(
+                    "ALTER TABLE {$table}
+                    ADD COLUMN branch_id BIGINT(20) UNSIGNED DEFAULT NULL AFTER reference_id,
+                    ADD KEY branch_id (branch_id)"
+                );
+            }
+
+            update_option('orerp_db_version', 1, false);
+        }
+    }
+
+    /**
+     * Migration runner (alias for orerp_maybe_upgrade) used during activation.
+     *
+     * @return void
+     */
+    private static function orerp_migrate_schema()
+    {
+        self::orerp_maybe_upgrade();
     }
 
     private static function orerp_create_branches_tables($charset_collate)
@@ -283,13 +328,15 @@ class Obydullah_ERP_Activator
             description TEXT NOT NULL,
             reference_type VARCHAR(50) DEFAULT NULL,
             reference_id BIGINT(20) UNSIGNED DEFAULT NULL,
+            branch_id BIGINT(20) UNSIGNED DEFAULT NULL,
             is_posted TINYINT(1) DEFAULT 0,
             created_by BIGINT(20) UNSIGNED DEFAULT NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY entry_number (entry_number),
             KEY date (date),
-            KEY reference (reference_type, reference_id)
+            KEY reference (reference_type, reference_id),
+            KEY branch_id (branch_id)
         ) {$charset_collate};";
 
         $sql .= "CREATE TABLE {$table_journal_lines} (

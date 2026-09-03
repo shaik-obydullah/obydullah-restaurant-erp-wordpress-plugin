@@ -121,10 +121,34 @@ class Obydullah_ERP_Integration
             'description'    => sprintf('Sale completed - Order #%s', $order->get_order_number()),
             'reference_type' => $ref_type,
             'reference_id'   => $order_id,
+            'branch_id'      => $this->orerp_get_order_branch_id($order_id),
             'lines'          => $lines,
         ]);
 
         return $result;
+    }
+
+    /**
+     * Resolve the ERP branch for a WooCommerce order.
+     *
+     * If the optional POS plugin stores a branch id in order meta it is
+     * used; otherwise the currently selected branch is used as a fallback.
+     *
+     * @param int $order_id WC order ID.
+     * @return int
+     */
+    private function orerp_get_order_branch_id($order_id)
+    {
+        $order_id = intval($order_id);
+
+        if (function_exists('get_post_meta')) {
+            $branch_id = intval(get_post_meta($order_id, '_orerp_branch_id', true));
+            if ($branch_id > 0) {
+                return $branch_id;
+            }
+        }
+
+        return Obydullah_ERP_Helpers::orerp_get_current_branch_id();
     }
 
     /**

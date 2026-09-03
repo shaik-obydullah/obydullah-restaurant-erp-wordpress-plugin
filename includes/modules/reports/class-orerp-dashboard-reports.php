@@ -20,6 +20,7 @@ class Obydullah_ERP_Dashboard_Reports
 
     public function orerp_render_dashboard()
     {
+        $branch_id = Obydullah_ERP_Helpers::orerp_get_current_branch_id();
         $stats = $this->orerp_get_dashboard_stats();
         ?>
         <div class="wrap">
@@ -119,7 +120,7 @@ class Obydullah_ERP_Dashboard_Reports
                     </a>
                 </div>
                 <div id="recent-purchases-list">
-                    <?php $this->orerp_render_recent_purchases(); ?>
+                    <?php $this->orerp_render_recent_purchases($branch_id); ?>
                 </div>
             </div>
 
@@ -131,7 +132,7 @@ class Obydullah_ERP_Dashboard_Reports
                     </a>
                 </div>
                 <div id="recent-journal-list">
-                    <?php $this->orerp_render_recent_journal_entries(); ?>
+                    <?php $this->orerp_render_recent_journal_entries($branch_id); ?>
                 </div>
             </div>
         </div>
@@ -176,12 +177,12 @@ class Obydullah_ERP_Dashboard_Reports
 
         $stats = [
             'total_branches'        => $this->orerp_get_count($wpdb->prefix . 'erp_branches', 'is_active = 1'),
-            'active_employees'      => $this->orerp_get_count($wpdb->prefix . 'erp_employees', 'is_active = 1'),
+            'active_employees'      => $this->orerp_get_count($wpdb->prefix . 'erp_employees', 'is_active = 1', $branch_id, 'branch_id'),
             'active_suppliers'      => $this->orerp_get_count($wpdb->prefix . 'erp_suppliers', 'is_active = 1'),
-            'pending_purchases'     => $this->orerp_get_count($wpdb->prefix . 'erp_purchase_orders', "status IN ('draft','pending','partial')"),
-            'active_kitchen_orders' => $this->orerp_get_count($wpdb->prefix . 'erp_kitchen_orders', "status IN ('pending','preparing')"),
-            'month_revenue'         => $this->orerp_get_month_revenue(),
-            'month_expenses'        => $this->orerp_get_month_expenses(),
+            'pending_purchases'     => $this->orerp_get_count($wpdb->prefix . 'erp_purchase_orders', "status IN ('draft','pending','partial')", $branch_id, 'branch_id'),
+            'active_kitchen_orders' => $this->orerp_get_count($wpdb->prefix . 'erp_kitchen_orders', "status IN ('pending','preparing')", $branch_id, 'branch_id'),
+            'month_revenue'         => $this->orerp_get_month_revenue($branch_id),
+            'month_expenses'        => $this->orerp_get_month_expenses($branch_id),
             'net_profit'            => 0,
         ];
 
@@ -190,35 +191,52 @@ class Obydullah_ERP_Dashboard_Reports
         return $stats;
     }
 
-    private function orerp_get_count($table, $where = '1=1')
+    private function orerp_get_count($table, $where = '1=1', $branch_id = 0, $branch_column = '')
     {
         global $wpdb;
 
-        $cache_key = 'count_' . md5($table . '_' . $where);
+        $extra_where = '';
+        $extra_args = [];
+
+        if ($branch_id > 0 && !empty($branch_column)) {
+            $extra_where = " AND {$branch_column} = %d";
+            $extra_args[] = $branch_id;
+        }
+
+        $cache_key = 'count_' . md5($table . '_' . $where . $extra_where . $branch_id);
         $cached = Obydullah_ERP_Cache::get($cache_key, $table);
         if (false !== $cached) {
             return intval($cached);
         }
 
-        $count = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE {$where} AND 1 = %d", 1)));
+        $prepare_args = array_merge([1], $extra_args);
+        $count = intval($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE {$where} AND 1 = %d{$extra_where}", $prepare_args)));
         Obydullah_ERP_Cache::set($cache_key, $table, $count);
         return $count;
     }
 
-    private function orerp_get_month_revenue()
+    private function orerp_get_month_revenue($branch_id = 0)
     {
         global $wpdb;
 
-        $table = $wpdb->prefix . 'erp_journal_lines';
         $month = intval(current_time('n'));
         $year  = intval(current_time('Y'));
 
-        $cache_key = 'month_revenue_' . $year . '_' . $month;
+        $branch_filter = '';
+        $branch_args = [];
+        if ($branch_id > 0) {
+            $branch_filter = 'AND je.branch_id = %d';
+            $branch_args[] = $branch_id;
+        }
+
+        $table = $wpdb->prefix . 'erp_journal_lines';
+        $cache_key = 'month_revenue_' . $year . '_' . $month . '_' . $branch_id;
         $cached = Obydullah_ERP_Cache::get($cache_key, $table);
         if (false !== $cached) {
             return floatval($cached);
         }
 
+        $prepare_args = array_merge([$month, $year], $branch_args);
         $result = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT COALESCE(SUM(jl.credit), 0)
@@ -228,9 +246,9 @@ class Obydullah_ERP_Dashboard_Reports
                 WHERE ja.type = 'revenue'
                 AND je.is_posted = 1
                 AND MONTH(je.date) = %d
-                AND YEAR(je.date) = %d",
-                $month,
-                $year
+                AND YEAR(je.date) = %d
+                {$branch_filter}",
+                $prepare_args
             )
         );
 
@@ -238,20 +256,28 @@ class Obydullah_ERP_Dashboard_Reports
         return floatval($result);
     }
 
-    private function orerp_get_month_expenses()
+    private function orerp_get_month_expenses($branch_id = 0)
     {
         global $wpdb;
 
-        $table = $wpdb->prefix . 'erp_journal_lines';
         $month = intval(current_time('n'));
         $year  = intval(current_time('Y'));
 
-        $cache_key = 'month_expenses_' . $year . '_' . $month;
+        $branch_filter = '';
+        $branch_args = [];
+        if ($branch_id > 0) {
+            $branch_filter = 'AND je.branch_id = %d';
+            $branch_args[] = $branch_id;
+        }
+
+        $table = $wpdb->prefix . 'erp_journal_lines';
+        $cache_key = 'month_expenses_' . $year . '_' . $month . '_' . $branch_id;
         $cached = Obydullah_ERP_Cache::get($cache_key, $table);
         if (false !== $cached) {
             return floatval($cached);
         }
 
+        $prepare_args = array_merge([$month, $year], $branch_args);
         $result = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT COALESCE(SUM(jl.debit), 0)
@@ -261,9 +287,9 @@ class Obydullah_ERP_Dashboard_Reports
                 WHERE ja.type = 'expense'
                 AND je.is_posted = 1
                 AND MONTH(je.date) = %d
-                AND YEAR(je.date) = %d",
-                $month,
-                $year
+                AND YEAR(je.date) = %d
+                {$branch_filter}",
+                $prepare_args
             )
         );
 
@@ -271,22 +297,40 @@ class Obydullah_ERP_Dashboard_Reports
         return floatval($result);
     }
 
-    private function orerp_render_recent_purchases()
+    private function orerp_render_recent_purchases($branch_id = 0)
     {
         global $wpdb;
         $table = $wpdb->prefix . 'erp_purchase_orders';
 
-        $cache_key = 'recent_purchases_5';
+        $branch_filter = '';
+        $branch_args = [];
+        if ($branch_id > 0) {
+            $branch_filter = 'AND po.branch_id = %d';
+            $branch_args[] = $branch_id;
+        }
+
+        $cache_key = 'recent_purchases_5_' . $branch_id;
         $cached = Obydullah_ERP_Cache::get($cache_key, $table);
         if (false !== $cached) {
             $orders = $cached;
         } else {
-            $orders = $wpdb->get_results(
-                "SELECT po.*, s.name as supplier_name
-                FROM {$wpdb->prefix}erp_purchase_orders po
-                LEFT JOIN {$wpdb->prefix}erp_suppliers s ON po.supplier_id = s.id
-                ORDER BY po.created_at DESC LIMIT 5"
-            );
+            if (!empty($branch_filter)) {
+                $orders = $wpdb->get_results($wpdb->prepare(
+                    "SELECT po.*, s.name as supplier_name
+                    FROM {$wpdb->prefix}erp_purchase_orders po
+                    LEFT JOIN {$wpdb->prefix}erp_suppliers s ON po.supplier_id = s.id
+                    WHERE 1 = 1 {$branch_filter}
+                    ORDER BY po.created_at DESC LIMIT 5",
+                    $branch_args
+                ));
+            } else {
+                $orders = $wpdb->get_results(
+                    "SELECT po.*, s.name as supplier_name
+                    FROM {$wpdb->prefix}erp_purchase_orders po
+                    LEFT JOIN {$wpdb->prefix}erp_suppliers s ON po.supplier_id = s.id
+                    ORDER BY po.created_at DESC LIMIT 5"
+                );
+            }
             Obydullah_ERP_Cache::set($cache_key, $table, $orders);
         }
 
@@ -317,19 +361,33 @@ class Obydullah_ERP_Dashboard_Reports
         echo '</tbody></table>';
     }
 
-    private function orerp_render_recent_journal_entries()
+    private function orerp_render_recent_journal_entries($branch_id = 0)
     {
         global $wpdb;
         $table = $wpdb->prefix . 'erp_journal_entries';
 
-        $cache_key = 'recent_journal_entries_5';
+        $branch_filter = '';
+        $branch_args = [];
+        if ($branch_id > 0) {
+            $branch_filter = 'AND branch_id = %d';
+            $branch_args[] = $branch_id;
+        }
+
+        $cache_key = 'recent_journal_entries_5_' . $branch_id;
         $cached = Obydullah_ERP_Cache::get($cache_key, $table);
         if (false !== $cached) {
             $entries = $cached;
+        } elseif (!empty($branch_args)) {
+            $entries = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM {$table} WHERE 1 = 1 {$branch_filter} ORDER BY date DESC, id DESC LIMIT 5",
+                $branch_args
+            ));
         } else {
             $entries = $wpdb->get_results(
                 $wpdb->prepare("SELECT * FROM {$table} WHERE 1 = %d ORDER BY date DESC, id DESC LIMIT 5", 1)
             );
+        }
+        if (false === $cached) {
             Obydullah_ERP_Cache::set($cache_key, $table, $entries);
         }
 

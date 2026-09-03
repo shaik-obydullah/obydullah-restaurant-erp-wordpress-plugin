@@ -311,6 +311,7 @@ class Obydullah_ERP_Journal_Entries
         $description = sanitize_textarea_field($data['description'] ?? 'orerp_');
         $reference_type = sanitize_text_field($data['reference_type'] ?? 'orerp_');
         $reference_id = intval($data['reference_id'] ?? 0);
+        $branch_id = intval($data['branch_id'] ?? 0);
         $lines = $data['lines'] ?? [];
 
         if (empty($description) || empty($lines)) {
@@ -335,6 +336,7 @@ class Obydullah_ERP_Journal_Entries
             'description'    => $description,
             'reference_type' => $reference_type,
             'reference_id'   => $reference_id,
+            'branch_id'      => $branch_id > 0 ? $branch_id : null,
             'is_posted'      => 1,
             'created_by'     => get_current_user_id(),
         ]);
@@ -380,6 +382,7 @@ class Obydullah_ERP_Journal_Entries
         $entry_number = sanitize_text_field($data['entry_number'] ?? Obydullah_ERP_Helpers::orerp_generate_entry_number());
         $date = sanitize_text_field($data['date'] ?? 'orerp_');
         $description = sanitize_textarea_field($data['description'] ?? 'orerp_');
+        $branch_id = intval($data['branch_id'] ?? 0);
         $lines = $data['lines'] ?? [];
 
         if (empty($date) || empty($description)) {
@@ -410,6 +413,7 @@ class Obydullah_ERP_Journal_Entries
                 'entry_number' => $entry_number,
                 'date'         => $date,
                 'description'  => $description,
+                'branch_id'    => $branch_id > 0 ? $branch_id : null,
             ], ['id' => $id]);
             $wpdb->delete($this->lines_table, ['entry_id' => $id]);
         } else {
@@ -417,6 +421,7 @@ class Obydullah_ERP_Journal_Entries
                 'entry_number' => $entry_number,
                 'date'         => $date,
                 'description'  => $description,
+                'branch_id'    => $branch_id > 0 ? $branch_id : null,
                 'is_posted'    => 0,
                 'created_by'   => get_current_user_id(),
             ]);

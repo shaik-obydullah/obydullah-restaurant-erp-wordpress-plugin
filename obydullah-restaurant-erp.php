@@ -32,6 +32,8 @@ require_once ORERP_PATH . 'includes/core/class-orerp-handler.php';
 register_activation_hook(__FILE__, ['Obydullah_ERP_Activator', 'activate']);
 register_deactivation_hook(__FILE__, ['Obydullah_ERP_Deactivator', 'deactivate']);
 
+add_action('plugins_loaded', ['Obydullah_ERP_Activator', 'orerp_maybe_upgrade']);
+
 add_action('plugins_loaded', 'orerp_init');
 function orerp_init()
 {
