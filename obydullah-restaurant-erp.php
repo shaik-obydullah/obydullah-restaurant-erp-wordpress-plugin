@@ -9,11 +9,11 @@
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: obydullah-restaurant-erp
- * Requires at least: 5.8
+ * Requires at least: 6.0
  * Requires PHP: 8.0
  * Domain Path: /languages
- * WC requires at least: 6.0
- * WC tested up to: 8.0
+ * WC requires at least: 8.0
+ * WC tested up to: 11.0
  */
 
 if (!defined('ABSPATH')) {
