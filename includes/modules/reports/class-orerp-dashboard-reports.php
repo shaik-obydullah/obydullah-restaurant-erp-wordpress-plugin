@@ -28,7 +28,7 @@ class Obydullah_ERP_Dashboard_Reports
             <hr class="wp-header-end">
 
             <!-- Branch Selector -->
-            <div style="margin-bottom: 20px;">
+            <div class="orerp-margin-bottom-20 orerp-branch-selector-wrap">
                 <div class="orerp-branch-selector">
                     <label for="orerp-branch-select"><?php esc_html_e('Current Branch:', 'obydullah-restaurant-erp'); ?></label>
                     <?php $this->orerp_render_branch_selector(); ?>
@@ -83,7 +83,7 @@ class Obydullah_ERP_Dashboard_Reports
                 <div class="orerp-card-header">
                     <h2><?php esc_html_e('Quick Actions', 'obydullah-restaurant-erp'); ?></h2>
                 </div>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div class="orerp-flex-row">
                     <a href="<?php echo esc_url(admin_url('admin.php?page=orerp-branches&action=add')); ?>" class="orerp-btn orerp-btn-primary">
                         <span class="dashicons dashicons-building"></span>
                         <?php esc_html_e('Add Branch', 'obydullah-restaurant-erp'); ?>
@@ -142,7 +142,7 @@ class Obydullah_ERP_Dashboard_Reports
     private function orerp_render_branch_selector()
     {
         global $wpdb;
-        $table = $wpdb->prefix . 'erp_branches';
+        $table = $wpdb->prefix . 'orerp_branches';
         $current = Obydullah_ERP_Helpers::orerp_get_current_branch_id();
 
         $cache_key = 'branch_selector_active';
@@ -176,11 +176,11 @@ class Obydullah_ERP_Dashboard_Reports
         $branch_id = Obydullah_ERP_Helpers::orerp_get_current_branch_id();
 
         $stats = [
-            'total_branches'        => $this->orerp_get_count($wpdb->prefix . 'erp_branches', 'is_active = 1'),
-            'active_employees'      => $this->orerp_get_count($wpdb->prefix . 'erp_employees', 'is_active = 1', $branch_id, 'branch_id'),
-            'active_suppliers'      => $this->orerp_get_count($wpdb->prefix . 'erp_suppliers', 'is_active = 1'),
-            'pending_purchases'     => $this->orerp_get_count($wpdb->prefix . 'erp_purchase_orders', "status IN ('draft','pending','partial')", $branch_id, 'branch_id'),
-            'active_kitchen_orders' => $this->orerp_get_count($wpdb->prefix . 'erp_kitchen_orders', "status IN ('pending','preparing')", $branch_id, 'branch_id'),
+            'total_branches'        => $this->orerp_get_count($wpdb->prefix . 'orerp_branches', 'is_active = 1'),
+            'active_employees'      => $this->orerp_get_count($wpdb->prefix . 'orerp_employees', 'is_active = 1', $branch_id, 'branch_id'),
+            'active_suppliers'      => $this->orerp_get_count($wpdb->prefix . 'orerp_suppliers', 'is_active = 1'),
+            'pending_purchases'     => $this->orerp_get_count($wpdb->prefix . 'orerp_purchase_orders', "status IN ('draft','pending','partial')", $branch_id, 'branch_id'),
+            'active_kitchen_orders' => $this->orerp_get_count($wpdb->prefix . 'orerp_kitchen_orders', "status IN ('pending','preparing')", $branch_id, 'branch_id'),
             'month_revenue'         => $this->orerp_get_month_revenue($branch_id),
             'month_expenses'        => $this->orerp_get_month_expenses($branch_id),
             'net_profit'            => 0,
@@ -229,7 +229,7 @@ class Obydullah_ERP_Dashboard_Reports
             $branch_args[] = $branch_id;
         }
 
-        $table = $wpdb->prefix . 'erp_journal_lines';
+        $table = $wpdb->prefix . 'orerp_journal_lines';
         $cache_key = 'month_revenue_' . $year . '_' . $month . '_' . $branch_id;
         $cached = Obydullah_ERP_Cache::get($cache_key, $table);
         if (false !== $cached) {
@@ -240,9 +240,9 @@ class Obydullah_ERP_Dashboard_Reports
         $result = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT COALESCE(SUM(jl.credit), 0)
-                FROM {$wpdb->prefix}erp_journal_lines jl
-                JOIN {$wpdb->prefix}erp_journal_entries je ON jl.entry_id = je.id
-                JOIN {$wpdb->prefix}erp_accounts ja ON jl.account_id = ja.id
+                FROM {$wpdb->prefix}orerp_journal_lines jl
+                JOIN {$wpdb->prefix}orerp_journal_entries je ON jl.entry_id = je.id
+                JOIN {$wpdb->prefix}orerp_accounts ja ON jl.account_id = ja.id
                 WHERE ja.type = 'revenue'
                 AND je.is_posted = 1
                 AND MONTH(je.date) = %d
@@ -270,7 +270,7 @@ class Obydullah_ERP_Dashboard_Reports
             $branch_args[] = $branch_id;
         }
 
-        $table = $wpdb->prefix . 'erp_journal_lines';
+        $table = $wpdb->prefix . 'orerp_journal_lines';
         $cache_key = 'month_expenses_' . $year . '_' . $month . '_' . $branch_id;
         $cached = Obydullah_ERP_Cache::get($cache_key, $table);
         if (false !== $cached) {
@@ -281,9 +281,9 @@ class Obydullah_ERP_Dashboard_Reports
         $result = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT COALESCE(SUM(jl.debit), 0)
-                FROM {$wpdb->prefix}erp_journal_lines jl
-                JOIN {$wpdb->prefix}erp_journal_entries je ON jl.entry_id = je.id
-                JOIN {$wpdb->prefix}erp_accounts ja ON jl.account_id = ja.id
+                FROM {$wpdb->prefix}orerp_journal_lines jl
+                JOIN {$wpdb->prefix}orerp_journal_entries je ON jl.entry_id = je.id
+                JOIN {$wpdb->prefix}orerp_accounts ja ON jl.account_id = ja.id
                 WHERE ja.type = 'expense'
                 AND je.is_posted = 1
                 AND MONTH(je.date) = %d
@@ -300,7 +300,7 @@ class Obydullah_ERP_Dashboard_Reports
     private function orerp_render_recent_purchases($branch_id = 0)
     {
         global $wpdb;
-        $table = $wpdb->prefix . 'erp_purchase_orders';
+        $table = $wpdb->prefix . 'orerp_purchase_orders';
 
         $branch_filter = '';
         $branch_args = [];
@@ -317,8 +317,8 @@ class Obydullah_ERP_Dashboard_Reports
             if (!empty($branch_filter)) {
                 $orders = $wpdb->get_results($wpdb->prepare(
                     "SELECT po.*, s.name as supplier_name
-                    FROM {$wpdb->prefix}erp_purchase_orders po
-                    LEFT JOIN {$wpdb->prefix}erp_suppliers s ON po.supplier_id = s.id
+                    FROM {$wpdb->prefix}orerp_purchase_orders po
+                    LEFT JOIN {$wpdb->prefix}orerp_suppliers s ON po.supplier_id = s.id
                     WHERE 1 = 1 {$branch_filter}
                     ORDER BY po.created_at DESC LIMIT 5",
                     $branch_args
@@ -326,8 +326,8 @@ class Obydullah_ERP_Dashboard_Reports
             } else {
                 $orders = $wpdb->get_results(
                     "SELECT po.*, s.name as supplier_name
-                    FROM {$wpdb->prefix}erp_purchase_orders po
-                    LEFT JOIN {$wpdb->prefix}erp_suppliers s ON po.supplier_id = s.id
+                    FROM {$wpdb->prefix}orerp_purchase_orders po
+                    LEFT JOIN {$wpdb->prefix}orerp_suppliers s ON po.supplier_id = s.id
                     ORDER BY po.created_at DESC LIMIT 5"
                 );
             }
@@ -364,7 +364,7 @@ class Obydullah_ERP_Dashboard_Reports
     private function orerp_render_recent_journal_entries($branch_id = 0)
     {
         global $wpdb;
-        $table = $wpdb->prefix . 'erp_journal_entries';
+        $table = $wpdb->prefix . 'orerp_journal_entries';
 
         $branch_filter = '';
         $branch_args = [];

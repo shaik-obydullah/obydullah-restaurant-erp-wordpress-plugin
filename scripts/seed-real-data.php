@@ -29,7 +29,7 @@ $prefix = $wpdb->prefix;
 
 echo "== Seeding real test data for Obydullah Restaurant ERP ==\n";
 
-$branch_ids = array_column( $wpdb->get_results( "SELECT id FROM {$prefix}erp_branches WHERE is_active = 1" ), 'id' );
+$branch_ids = array_column( $wpdb->get_results( "SELECT id FROM {$prefix}orerp_branches WHERE is_active = 1" ), 'id' );
 if ( empty( $branch_ids ) ) {
 	echo "No active branches found. Aborting.\n";
 	return;
@@ -58,13 +58,13 @@ $recipe_map = array(
 
 // Ensure recipes reference real WC products (one recipe per dish product).
 // Existing recipes were seeded with product_id = 0, so we bind them in place.
-$recipes = $wpdb->get_results( "SELECT id, product_id, name FROM {$prefix}erp_recipes ORDER BY id" );
+$recipes = $wpdb->get_results( "SELECT id, product_id, name FROM {$prefix}orerp_recipes ORDER BY id" );
 $recipe_dish_ids = array_keys( $recipe_map ); // real dish product IDs.
 foreach ( $recipes as $index => $r ) {
 	$product_id = $recipe_dish_ids[ $index % count( $recipe_dish_ids ) ];
 	list( $name, $servings, $prep, $cook ) = $recipe_map[ $product_id ];
 	$wpdb->update(
-		"{$prefix}erp_recipes",
+		"{$prefix}orerp_recipes",
 		array(
 			'product_id'        => $product_id,
 			'name'              => $name,
@@ -82,11 +82,11 @@ foreach ( $recipes as $index => $r ) {
 // ---- Bind recipe ingredients to real ingredient products ----
 // Raw / ingredient products to assign as recipe inputs.
 $ingredient_assign = array( 18, 19, 20, 21, 22, 23, 65, 66, 67, 68 );
-$reci_ings = $wpdb->get_results( "SELECT id, recipe_id, product_id FROM {$prefix}erp_recipe_ingredients ORDER BY id" );
+$reci_ings = $wpdb->get_results( "SELECT id, recipe_id, product_id FROM {$prefix}orerp_recipe_ingredients ORDER BY id" );
 foreach ( $reci_ings as $ing ) {
 	if ( (int) $ing->product_id === 0 ) {
 		$product_id = $ingredient_assign[ ( (int) $ing->id - 1 ) % count( $ingredient_assign ) ];
-		$wpdb->update( "{$prefix}erp_recipe_ingredients", array( 'product_id' => $product_id ), array( 'id' => (int) $ing->id ) );
+		$wpdb->update( "{$prefix}orerp_recipe_ingredients", array( 'product_id' => $product_id ), array( 'id' => (int) $ing->id ) );
 		echo "   recipe_ingredient #{$ing->id}: bound to product #{$product_id}\n";
 	}
 }
@@ -99,12 +99,12 @@ $ingredient_product_ids_opt = array(
 );
 
 // ---- Purchase items: bind to real products ----
-$purchase_items = $wpdb->get_results( "SELECT id, purchase_id, product_id FROM {$prefix}erp_purchase_items" );
+$purchase_items = $wpdb->get_results( "SELECT id, purchase_id, product_id FROM {$prefix}orerp_purchase_items" );
 $pi_products = array( 10, 12, 14, 18, 20, 61, 64, 21, 23, 67 );
 foreach ( $purchase_items as $pi ) {
 	if ( (int) $pi->product_id === 0 ) {
 		$next = $pi_products[ ( (int) $pi->id - 1 ) % count( $pi_products ) ];
-		$wpdb->update( "{$prefix}erp_purchase_items", array( 'product_id' => $next ), array( 'id' => (int) $pi->id ) );
+		$wpdb->update( "{$prefix}orerp_purchase_items", array( 'product_id' => $next ), array( 'id' => (int) $pi->id ) );
 		echo "   purchase_item #{$pi->id}: bound to product #{$next}\n";
 	}
 }
@@ -140,13 +140,13 @@ $stock_map = array(
 	71 => array( 22, 16, 10, 6 ),
 );
 
-$stock_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}erp_branch_stock" );
+$stock_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}orerp_branch_stock" );
 if ( $stock_count === 0 ) {
 	foreach ( $stock_map as $product_id => $qtys ) {
 		foreach ( $branch_ids as $i => $branch_id ) {
 			$qty = isset( $qtys[ $i ] ) ? $qtys[ $i ] : max( 2, $qty - 5 );
 			$wpdb->insert(
-				"{$prefix}erp_branch_stock",
+				"{$prefix}orerp_branch_stock",
 				array(
 					'branch_id'      => $branch_id,
 					'product_id'     => $product_id,
@@ -163,9 +163,9 @@ if ( $stock_count === 0 ) {
 }
 
 // ---- Supplier products ----
-$sp_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}erp_supplier_products" );
+$sp_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}orerp_supplier_products" );
 if ( $sp_count === 0 ) {
-	$suppliers = $wpdb->get_results( "SELECT id FROM {$prefix}erp_suppliers ORDER BY id" );
+	$suppliers = $wpdb->get_results( "SELECT id FROM {$prefix}orerp_suppliers ORDER BY id" );
 	$sp_assign = array(
 		1 => array( 10, 11, 12, 13, 61, 62, 63 ),
 		2 => array( 14, 15, 16, 17, 64 ),
@@ -175,7 +175,7 @@ if ( $sp_count === 0 ) {
 	foreach ( $suppliers as $sup ) {
 		foreach ( $sp_assign[ (int) $sup->id ] ?? array() as $product_id ) {
 			$wpdb->insert(
-				"{$prefix}erp_supplier_products",
+				"{$prefix}orerp_supplier_products",
 				array(
 					'supplier_id'    => (int) $sup->id,
 					'product_id'     => $product_id,
@@ -193,12 +193,12 @@ if ( $sp_count === 0 ) {
 }
 
 // ---- Transfers (inter-branch) ----
-$transfer_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}erp_transfers" );
+$transfer_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}orerp_transfers" );
 if ( $transfer_count === 0 && count( $branch_ids ) >= 2 ) {
 	$from = $branch_ids[0];
 	$to   = $branch_ids[1];
 	$wpdb->insert(
-		"{$prefix}erp_transfers",
+		"{$prefix}orerp_transfers",
 		array(
 			'from_branch_id' => $from,
 			'to_branch_id'   => $to,
@@ -211,7 +211,7 @@ if ( $transfer_count === 0 && count( $branch_ids ) >= 2 ) {
 	);
 	$t1 = $wpdb->insert_id;
 	foreach ( array( 10, 18, 65 ) as $product_id ) {
-		$wpdb->insert( "{$prefix}erp_transfer_items", array(
+		$wpdb->insert( "{$prefix}orerp_transfer_items", array(
 			'transfer_id'       => $t1,
 			'product_id'        => $product_id,
 			'quantity'          => 20,
@@ -220,7 +220,7 @@ if ( $transfer_count === 0 && count( $branch_ids ) >= 2 ) {
 	}
 
 	$wpdb->insert(
-		"{$prefix}erp_transfers",
+		"{$prefix}orerp_transfers",
 		array(
 			'from_branch_id' => $branch_ids[1],
 			'to_branch_id'   => $branch_ids[2],
@@ -232,7 +232,7 @@ if ( $transfer_count === 0 && count( $branch_ids ) >= 2 ) {
 	);
 	$t2 = $wpdb->insert_id;
 	foreach ( array( 19, 67 ) as $product_id ) {
-		$wpdb->insert( "{$prefix}erp_transfer_items", array(
+		$wpdb->insert( "{$prefix}orerp_transfer_items", array(
 			'transfer_id'       => $t2,
 			'product_id'        => $product_id,
 			'quantity'          => 15,
@@ -245,7 +245,7 @@ if ( $transfer_count === 0 && count( $branch_ids ) >= 2 ) {
 }
 
 // ---- Fiscal periods ----
-$fp_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}erp_fiscal_periods" );
+$fp_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}orerp_fiscal_periods" );
 if ( $fp_count === 0 ) {
 	$year = (int) gmdate( 'Y' );
 	$periods = array(
@@ -257,7 +257,7 @@ if ( $fp_count === 0 ) {
 		array( 'September ' . $year, "{$year}-09-01", "{$year}-09-30", 0 ),
 	);
 	foreach ( $periods as $p ) {
-		$wpdb->insert( "{$prefix}erp_fiscal_periods", array(
+		$wpdb->insert( "{$prefix}orerp_fiscal_periods", array(
 			'name'       => $p[0],
 			'start_date' => $p[1],
 			'end_date'   => $p[2],
@@ -274,8 +274,8 @@ $real_wc_orders = $wpdb->get_col( "SELECT ID FROM {$wpdb->posts} WHERE post_type
 if ( empty( $real_wc_orders ) ) {
 	echo "   No real WC orders found for kitchen linking; using existing mapping.\n";
 } else {
-	$kitchen_orders = $wpdb->get_results( "SELECT id, order_id, station FROM {$prefix}erp_kitchen_orders ORDER BY id" );
-	$kitchen_items  = $wpdb->get_results( "SELECT id, kitchen_order_id, product_id FROM {$prefix}erp_kitchen_order_items ORDER BY id" );
+	$kitchen_orders = $wpdb->get_results( "SELECT id, order_id, station FROM {$prefix}orerp_kitchen_orders ORDER BY id" );
+	$kitchen_items  = $wpdb->get_results( "SELECT id, kitchen_order_id, product_id FROM {$prefix}orerp_kitchen_order_items ORDER BY id" );
 	$item_by_order  = array();
 	foreach ( $kitchen_items as $ki ) {
 		$item_by_order[ (int) $ki->kitchen_order_id ][] = $ki;
@@ -284,14 +284,14 @@ if ( empty( $real_wc_orders ) ) {
 	$dish_ids = array_slice( $ingredient_product_ids_opt, 0, 16 );
 	foreach ( $kitchen_orders as $ko ) {
 		$real_order_id = $real_wc_orders[ ( (int) $ko->id - 1 ) % count( $real_wc_orders ) ];
-		$wpdb->update( "{$prefix}erp_kitchen_orders", array( 'order_id' => (int) $real_order_id ), array( 'id' => (int) $ko->id ) );
+		$wpdb->update( "{$prefix}orerp_kitchen_orders", array( 'order_id' => (int) $real_order_id ), array( 'id' => (int) $ko->id ) );
 
 		// Rebuild items with real product names.
 		foreach ( ( $item_by_order[ (int) $ko->id ] ?? array() ) as $ki ) {
 			$product_id = $dish_ids[ ( (int) $ki->id - 1 ) % count( $dish_ids ) ];
 			$product    = $wpdb->get_row( $wpdb->prepare( "SELECT post_title FROM {$wpdb->posts} WHERE ID = %d", $product_id ) );
 			$name       = $product ? $product->post_title : 'Item ' . $ki->id;
-			$wpdb->update( "{$prefix}erp_kitchen_order_items", array(
+			$wpdb->update( "{$prefix}orerp_kitchen_order_items", array(
 				'product_id' => $product_id,
 				'name'       => $name,
 			), array( 'id' => (int) $ki->id ) );
@@ -301,11 +301,11 @@ if ( empty( $real_wc_orders ) ) {
 }
 
 // ---- Prep tracking ----
-$pt_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}erp_prep_tracking" );
+$pt_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}orerp_prep_tracking" );
 if ( $pt_count === 0 ) {
-	$employees   = $wpdb->get_col( "SELECT id FROM {$prefix}erp_employees ORDER BY id" );
-	$recipes     = $wpdb->get_col( "SELECT id FROM {$prefix}erp_recipes ORDER BY id" );
-	$kitchen_ids = $wpdb->get_col( "SELECT id FROM {$prefix}erp_kitchen_orders WHERE status IN ('completed','ready') ORDER BY id" );
+	$employees   = $wpdb->get_col( "SELECT id FROM {$prefix}orerp_employees ORDER BY id" );
+	$recipes     = $wpdb->get_col( "SELECT id FROM {$prefix}orerp_recipes ORDER BY id" );
+	$kitchen_ids = $wpdb->get_col( "SELECT id FROM {$prefix}orerp_kitchen_orders WHERE status IN ('completed','ready') ORDER BY id" );
 	$n = 0;
 	foreach ( $kitchen_ids as $ko_id ) {
 		if ( $n >= 12 ) {
@@ -316,7 +316,7 @@ if ( $pt_count === 0 ) {
 		$start = gmdate( 'Y-m-d H:i:s', strtotime( "-{$n} day 10:00:00" ) );
 		$mins  = 15 + ( $n % 40 );
 		$end   = gmdate( 'Y-m-d H:i:s', strtotime( "-{$n} day 10:{$mins}:00" ) );
-		$wpdb->insert( "{$prefix}erp_prep_tracking", array(
+		$wpdb->insert( "{$prefix}orerp_prep_tracking", array(
 			'kitchen_order_id'   => $ko_id,
 			'recipe_id'          => $re,
 			'employee_id'        => $emp,
@@ -340,22 +340,22 @@ foreach ( $user_ids as $uid ) {
 		$use_users[] = (int) $uid;
 	}
 }
-$employees = $wpdb->get_results( "SELECT id, user_id FROM {$prefix}erp_employees ORDER BY id" );
+$employees = $wpdb->get_results( "SELECT id, user_id FROM {$prefix}orerp_employees ORDER BY id" );
 foreach ( $employees as $e ) {
 	if ( empty( $e->user_id ) && ! empty( $use_users ) ) {
 		$target = $use_users[ ( (int) $e->id - 1 ) % count( $use_users ) ];
-		$wpdb->update( "{$prefix}erp_employees", array( 'user_id' => $target ), array( 'id' => (int) $e->id ) );
+		$wpdb->update( "{$prefix}orerp_employees", array( 'user_id' => $target ), array( 'id' => (int) $e->id ) );
 		echo "   employee #{$e->id}: linked to WP user #{$target}\n";
 	}
 }
 
 // Post any unposted but balanced journal entries so reports are complete.
-$unposted = $wpdb->get_results( "SELECT id FROM {$prefix}erp_journal_entries WHERE is_posted = 0" );
+$unposted = $wpdb->get_results( "SELECT id FROM {$prefix}orerp_journal_entries WHERE is_posted = 0" );
 foreach ( $unposted as $entry ) {
-	$dr = (float) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(debit),0) FROM {$prefix}erp_journal_lines WHERE entry_id = %d", (int) $entry->id ) );
-	$cr = (float) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(credit),0) FROM {$prefix}erp_journal_lines WHERE entry_id = %d", (int) $entry->id ) );
+	$dr = (float) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(debit),0) FROM {$prefix}orerp_journal_lines WHERE entry_id = %d", (int) $entry->id ) );
+	$cr = (float) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(credit),0) FROM {$prefix}orerp_journal_lines WHERE entry_id = %d", (int) $entry->id ) );
 	if ( abs( $dr - $cr ) < 0.01 ) {
-		$wpdb->update( "{$prefix}erp_journal_entries", array( 'is_posted' => 1 ), array( 'id' => (int) $entry->id ) );
+		$wpdb->update( "{$prefix}orerp_journal_entries", array( 'is_posted' => 1 ), array( 'id' => (int) $entry->id ) );
 		echo "   journal entry #{$entry->id}: posted (balanced)\n";
 	}
 }

@@ -19,8 +19,8 @@ class Obydullah_ERP_Branch_Transfers
     public function __construct()
     {
         global $wpdb;
-        $this->table = $wpdb->prefix . 'erp_transfers';
-        $this->items_table = $wpdb->prefix . 'erp_transfer_items';
+        $this->table = $wpdb->prefix . 'orerp_transfers';
+        $this->items_table = $wpdb->prefix . 'orerp_transfer_items';
 
         add_action('wp_ajax_orerp_get_transfers', [$this, 'orerp_ajax_get_transfers']);
         add_action('wp_ajax_orerp_save_transfer', [$this, 'orerp_ajax_save_transfer']);
@@ -35,7 +35,7 @@ class Obydullah_ERP_Branch_Transfers
         $defaults = [
             'per_page' => 20,
             'page'     => 1,
-            'status'   => 'orerp_',
+            'status'   => '',
             'branch_id' => 0,
         ];
 
@@ -74,8 +74,8 @@ class Obydullah_ERP_Branch_Transfers
             fb.name as from_branch_name,
             tb.name as to_branch_name
             FROM {$this->table} t
-            LEFT JOIN {$wpdb->prefix}erp_branches fb ON t.from_branch_id = fb.id
-            LEFT JOIN {$wpdb->prefix}erp_branches tb ON t.to_branch_id = tb.id
+            LEFT JOIN {$wpdb->prefix}orerp_branches fb ON t.from_branch_id = fb.id
+            LEFT JOIN {$wpdb->prefix}orerp_branches tb ON t.to_branch_id = tb.id
             WHERE {$where}
             ORDER BY t.created_at DESC
             LIMIT %d OFFSET %d",
@@ -109,8 +109,8 @@ class Obydullah_ERP_Branch_Transfers
             fb.name as from_branch_name,
             tb.name as to_branch_name
             FROM {$this->table} t
-            LEFT JOIN {$wpdb->prefix}erp_branches fb ON t.from_branch_id = fb.id
-            LEFT JOIN {$wpdb->prefix}erp_branches tb ON t.to_branch_id = tb.id
+            LEFT JOIN {$wpdb->prefix}orerp_branches fb ON t.from_branch_id = fb.id
+            LEFT JOIN {$wpdb->prefix}orerp_branches tb ON t.to_branch_id = tb.id
             WHERE t.id = %d",
             $id
         ));
@@ -135,7 +135,7 @@ class Obydullah_ERP_Branch_Transfers
 
         $from_branch = intval($data['from_branch_id'] ?? 0);
         $to_branch = intval($data['to_branch_id'] ?? 0);
-        $notes = sanitize_textarea_field($data['notes'] ?? 'orerp_');
+        $notes = sanitize_textarea_field($data['notes'] ?? '');
         $items = json_decode(stripslashes($data['items'] ?? '[]'), true);
 
         if (!$from_branch || !$to_branch) {
@@ -156,7 +156,7 @@ class Obydullah_ERP_Branch_Transfers
             'status'         => 'pending',
             'notes'          => $notes,
             'created_by'     => get_current_user_id(),
-        ]);
+        ],['%s', '%s', '%s', '%s', '%s']);
 
         $transfer_id = $wpdb->insert_id;
 
@@ -169,7 +169,7 @@ class Obydullah_ERP_Branch_Transfers
                 'transfer_id' => $transfer_id,
                 'product_id'  => intval($item['product_id']),
                 'quantity'    => intval($item['quantity']),
-            ]);
+            ],['%s', '%d', '%d']);
         }
 
         Obydullah_ERP_Cache::invalidate($this->table);
@@ -200,18 +200,18 @@ class Obydullah_ERP_Branch_Transfers
 
             $wpdb->update($this->items_table, [
                 'received_quantity' => $received_qty,
-            ], ['id' => $item->id]);
+            ], ['id' => $item->id], ['%s'], ['%s']);
 
             if ($received_qty > 0) {
-                $branches->update_branch_stock($transfer->from_branch_id, $item->product_id, -$received_qty);
-                $branches->update_branch_stock($transfer->to_branch_id, $item->product_id, $received_qty);
+                $branches->orerp_update_branch_stock($transfer->from_branch_id, $item->product_id, -$received_qty);
+                $branches->orerp_update_branch_stock($transfer->to_branch_id, $item->product_id, $received_qty);
             }
         }
 
         $wpdb->update($this->table, [
             'status'      => 'received',
             'received_at' => current_time('mysql'),
-        ], ['id' => $id]);
+        ], ['id' => $id],['%s', '%s'], ['%s']);
 
         Obydullah_ERP_Cache::invalidate($this->table);
         Obydullah_ERP_Cache::invalidate($this->items_table);
@@ -236,7 +236,7 @@ class Obydullah_ERP_Branch_Transfers
 
         $wpdb->update($this->table, [
             'status' => 'cancelled',
-        ], ['id' => $id]);
+        ], ['id' => $id], ['%s'], ['%s']);
 
         Obydullah_ERP_Cache::invalidate($this->table);
 
@@ -254,7 +254,7 @@ class Obydullah_ERP_Branch_Transfers
         $result = $this->orerp_get_transfers([
             'per_page'  => intval($_GET['per_page'] ?? 20),
             'page'      => intval($_GET['page'] ?? 1),
-            'status'    => sanitize_text_field(wp_unslash($_GET['status'] ?? 'orerp_')),
+            'status'    => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
             'branch_id' => intval($_GET['branch_id'] ?? 0),
         ]);
 
@@ -269,7 +269,7 @@ class Obydullah_ERP_Branch_Transfers
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_create_transfer($_POST);
+        $result = $this->orerp_create_transfer(wp_unslash($_POST));
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());

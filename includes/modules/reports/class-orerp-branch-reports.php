@@ -16,14 +16,14 @@ if (!defined('ABSPATH')) {
 
 class Obydullah_ERP_Branch_Reports
 {
-    public function orerp_get_branch_comparison($from = 'orerp_', $to = 'orerp_')
+    public function orerp_get_branch_comparison($from = '', $to = '')
     {
         global $wpdb;
 
         $from = Obydullah_ERP_Helpers::orerp_is_valid_date($from) ? $from : gmdate('Y-m-01');
         $to   = Obydullah_ERP_Helpers::orerp_is_valid_date($to) ? $to : gmdate('Y-m-d');
 
-        $branches_table = $wpdb->prefix . 'erp_branches';
+        $branches_table = $wpdb->prefix . 'orerp_branches';
         $cache_key = 'branch_list_active';
         $cached = Obydullah_ERP_Cache::get($cache_key, $branches_table);
         if (false !== $cached) {
@@ -36,7 +36,7 @@ class Obydullah_ERP_Branch_Reports
         $comparison = [];
 
         foreach ($branches as $branch) {
-            $emp_table = $wpdb->prefix . 'erp_employees';
+            $emp_table = $wpdb->prefix . 'orerp_employees';
 
             $cache_key = 'branch_emp_count_' . $branch->id;
             $cached = Obydullah_ERP_Cache::get($cache_key, $emp_table);
@@ -44,13 +44,13 @@ class Obydullah_ERP_Branch_Reports
                 $emp_count = $cached;
             } else {
                 $emp_count = $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM {$wpdb->prefix}erp_employees WHERE branch_id = %d AND is_active = 1",
+                    "SELECT COUNT(*) FROM {$wpdb->prefix}orerp_employees WHERE branch_id = %d AND is_active = 1",
                     $branch->id
                 ));
                 Obydullah_ERP_Cache::set($cache_key, $emp_table, $emp_count);
             }
 
-            $po_table = $wpdb->prefix . 'erp_purchase_orders';
+            $po_table = $wpdb->prefix . 'orerp_purchase_orders';
 
             $cache_key = 'branch_po_count_' . $branch->id . '_' . $from . '_' . $to;
             $cached = Obydullah_ERP_Cache::get($cache_key, $po_table);
@@ -58,7 +58,7 @@ class Obydullah_ERP_Branch_Reports
                 $po_count = $cached;
             } else {
                 $po_count = $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM {$wpdb->prefix}erp_purchase_orders WHERE branch_id = %d AND created_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM {$wpdb->prefix}orerp_purchase_orders WHERE branch_id = %d AND created_at BETWEEN %s AND %s",
                     $branch->id, $from . ' 00:00:00', $to . ' 23:59:59'
                 ));
                 Obydullah_ERP_Cache::set($cache_key, $po_table, $po_count);
@@ -70,13 +70,13 @@ class Obydullah_ERP_Branch_Reports
                 $po_total = $cached;
             } else {
                 $po_total = $wpdb->get_var($wpdb->prepare(
-                    "SELECT COALESCE(SUM(total), 0) FROM {$wpdb->prefix}erp_purchase_orders WHERE branch_id = %d AND status = 'received' AND created_at BETWEEN %s AND %s",
+                    "SELECT COALESCE(SUM(total), 0) FROM {$wpdb->prefix}orerp_purchase_orders WHERE branch_id = %d AND status = 'received' AND created_at BETWEEN %s AND %s",
                     $branch->id, $from . ' 00:00:00', $to . ' 23:59:59'
                 ));
                 Obydullah_ERP_Cache::set($cache_key, $po_table, $po_total);
             }
 
-            $ko_table = $wpdb->prefix . 'erp_kitchen_orders';
+            $ko_table = $wpdb->prefix . 'orerp_kitchen_orders';
 
             $cache_key = 'branch_kitchen_orders_' . $branch->id . '_' . $from . '_' . $to;
             $cached = Obydullah_ERP_Cache::get($cache_key, $ko_table);
@@ -84,13 +84,13 @@ class Obydullah_ERP_Branch_Reports
                 $kitchen_orders = $cached;
             } else {
                 $kitchen_orders = $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM {$wpdb->prefix}erp_kitchen_orders WHERE branch_id = %d AND DATE(created_at) BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM {$wpdb->prefix}orerp_kitchen_orders WHERE branch_id = %d AND DATE(created_at) BETWEEN %s AND %s",
                     $branch->id, $from, $to
                 ));
                 Obydullah_ERP_Cache::set($cache_key, $ko_table, $kitchen_orders);
             }
 
-            $bs_table = $wpdb->prefix . 'erp_branch_stock';
+            $bs_table = $wpdb->prefix . 'orerp_branch_stock';
 
             $cache_key = 'branch_stock_count_' . $branch->id;
             $cached = Obydullah_ERP_Cache::get($cache_key, $bs_table);
@@ -98,7 +98,7 @@ class Obydullah_ERP_Branch_Reports
                 $stock_count = $cached;
             } else {
                 $stock_count = $wpdb->get_var($wpdb->prepare(
-                    "SELECT COALESCE(SUM(quantity), 0) FROM {$wpdb->prefix}erp_branch_stock WHERE branch_id = %d",
+                    "SELECT COALESCE(SUM(quantity), 0) FROM {$wpdb->prefix}orerp_branch_stock WHERE branch_id = %d",
                     $branch->id
                 ));
                 Obydullah_ERP_Cache::set($cache_key, $bs_table, $stock_count);

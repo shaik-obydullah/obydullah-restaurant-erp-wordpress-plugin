@@ -3,7 +3,7 @@
 /**
  * Inventory Report
  *
- * Per-branch stock levels from erp_branch_stock with product names, latest
+ * Per-branch stock levels from orerp_branch_stock with product names, latest
  * purchase cost, low-stock alerts and stock-outs.
  *
  * @package Obydullah_ERP
@@ -22,9 +22,9 @@ class Obydullah_ERP_Inventory_Reports
 
         $branch_id = intval($branch_id);
 
-        $stock_table    = $wpdb->prefix . 'erp_branch_stock';
-        $purchase_items = $wpdb->prefix . 'erp_purchase_items';
-        $branches_table = $wpdb->prefix . 'erp_branches';
+        $stock_table    = $wpdb->prefix . 'orerp_branch_stock';
+        $purchase_items = $wpdb->prefix . 'orerp_purchase_items';
+        $branches_table = $wpdb->prefix . 'orerp_branches';
 
         $where   = '1=1';
         $prepare = [];

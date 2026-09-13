@@ -25,10 +25,10 @@ class Obydullah_ERP_Tax_Reports
     {
         global $wpdb;
 
-        $this->table_orders   = $wpdb->prefix . 'erp_purchase_orders';
-        $this->table_entries  = $wpdb->prefix . 'erp_journal_entries';
-        $this->table_lines    = $wpdb->prefix . 'erp_journal_lines';
-        $this->table_accounts = $wpdb->prefix . 'erp_accounts';
+        $this->table_orders   = $wpdb->prefix . 'orerp_purchase_orders';
+        $this->table_entries  = $wpdb->prefix . 'orerp_journal_entries';
+        $this->table_lines    = $wpdb->prefix . 'orerp_journal_lines';
+        $this->table_accounts = $wpdb->prefix . 'orerp_accounts';
 
         add_action('wp_ajax_orerp_get_tax_summary', [$this, 'orerp_ajax_get_tax_summary']);
     }
@@ -38,13 +38,13 @@ class Obydullah_ERP_Tax_Reports
         ?>
         <div class="wrap">
             <h1><?php esc_html_e('Tax Reports', 'obydullah-restaurant-erp'); ?></h1>
-            <div class="orerp-print-actions" style="margin:8px 0 12px;">
+            <div class="orerp-print-actions orerp-print-actions-margin">
                 <button type="button" id="orerp-print-report" class="button"><?php esc_html_e('Print / PDF', 'obydullah-restaurant-erp'); ?></button>
             </div>
             <hr class="wp-header-end">
 
             <div class="orerp-card">
-                <div class="orerp-filters" style="margin-bottom:15px;">
+                <div class="orerp-filters orerp-filters-compact">
                     <div class="filter-group">
                         <label><?php esc_html_e('From', 'obydullah-restaurant-erp'); ?></label>
                         <input type="date" id="tax-date-from" class="regular-text"
@@ -77,7 +77,7 @@ class Obydullah_ERP_Tax_Reports
      * @param string $to   End date.
      * @return array
      */
-    public function orerp_get_vat_summary($from = 'orerp_', $to = 'orerp_')
+    public function orerp_get_vat_summary($from = '', $to = '')
     {
         global $wpdb;
 
@@ -176,7 +176,7 @@ class Obydullah_ERP_Tax_Reports
      * @param string $to   End date.
      * @return array
      */
-    public function orerp_get_vat_by_month($from = 'orerp_', $to = 'orerp_')
+    public function orerp_get_vat_by_month($from = '', $to = '')
     {
         global $wpdb;
 
@@ -269,8 +269,8 @@ class Obydullah_ERP_Tax_Reports
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $from = sanitize_text_field(wp_unslash($_GET['from'] ?? 'orerp_'));
-        $to   = sanitize_text_field(wp_unslash($_GET['to'] ?? 'orerp_'));
+        $from = sanitize_text_field(wp_unslash($_GET['from'] ?? ''));
+        $to   = sanitize_text_field(wp_unslash($_GET['to'] ?? ''));
 
         $summary = $this->orerp_get_vat_summary($from, $to);
         $summary['monthly'] = $this->orerp_get_vat_by_month($summary['from'], $summary['to']);

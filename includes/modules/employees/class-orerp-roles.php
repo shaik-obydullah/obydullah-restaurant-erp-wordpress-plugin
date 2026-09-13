@@ -154,7 +154,7 @@ class Obydullah_ERP_Roles
     {
         global $wpdb;
 
-        $table = $wpdb->prefix . 'erp_employees';
+        $table = $wpdb->prefix . 'orerp_employees';
         $cache_key = 'employees_with_roles';
         $cached = Obydullah_ERP_Cache::get($cache_key, $table);
         if (false !== $cached) {
@@ -165,14 +165,14 @@ class Obydullah_ERP_Roles
             "SELECT e.id, e.employee_code, e.position, e.user_id,
                 b.name AS branch_name, u.display_name AS display_name
             FROM {$table} e
-            LEFT JOIN {$wpdb->prefix}erp_branches b ON e.branch_id = b.id
+            LEFT JOIN {$wpdb->prefix}orerp_branches b ON e.branch_id = b.id
             LEFT JOIN {$wpdb->users} u ON e.user_id = u.ID
             WHERE e.is_active = 1
             ORDER BY u.display_name ASC"
         ) ?: [];
 
         foreach ($users as &$employee) {
-            $employee->wp_role = 'orerp_';
+            $employee->wp_role = '';
             if ($employee->user_id) {
                 $user = get_userdata($employee->user_id);
                 if ($user) {
@@ -208,7 +208,7 @@ class Obydullah_ERP_Roles
             foreach ($allowed as $role) {
                 $user->remove_role($role);
             }
-            Obydullah_ERP_Cache::invalidate($wpdb->prefix . 'erp_employees');
+            Obydullah_ERP_Cache::invalidate($wpdb->prefix . 'orerp_employees');
             return true;
         }
 
@@ -222,7 +222,7 @@ class Obydullah_ERP_Roles
         }
         $user->add_role($role_key);
 
-        Obydullah_ERP_Cache::invalidate($wpdb->prefix . 'erp_employees');
+        Obydullah_ERP_Cache::invalidate($wpdb->prefix . 'orerp_employees');
 
         return true;
     }
@@ -249,7 +249,7 @@ class Obydullah_ERP_Roles
         }
 
         $user_id = intval($_POST['user_id'] ?? 0);
-        $role_key = sanitize_text_field(wp_unslash($_POST['role'] ?? 'orerp_'));
+        $role_key = sanitize_text_field(wp_unslash($_POST['role'] ?? ''));
 
         $result = $this->orerp_assign_role($user_id, $role_key);
 

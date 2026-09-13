@@ -25,8 +25,8 @@ class Obydullah_ERP_Order_Workflow
     {
         global $wpdb;
 
-        $this->table_orders = $wpdb->prefix . 'erp_kitchen_orders';
-        $this->table_items  = $wpdb->prefix . 'erp_kitchen_order_items';
+        $this->table_orders = $wpdb->prefix . 'orerp_kitchen_orders';
+        $this->table_items  = $wpdb->prefix . 'orerp_kitchen_order_items';
 
         add_action('wp_ajax_orerp_create_workflow_order', [$this, 'orerp_ajax_create_from_order']);
         add_action('wp_ajax_orerp_get_workflow_order', [$this, 'orerp_ajax_get_order']);
@@ -42,7 +42,7 @@ class Obydullah_ERP_Order_Workflow
      * @param int    $priority    Priority level.
      * @return int|WP_Error Kitchen order ID.
      */
-    public function orerp_create_from_order($wc_order_id, $branch_id, $station = 'orerp_', $priority = 0)
+    public function orerp_create_from_order($wc_order_id, $branch_id, $station = '', $priority = 0)
     {
         global $wpdb;
 
@@ -93,7 +93,7 @@ class Obydullah_ERP_Order_Workflow
             'notes'          => $notes,
         ];
 
-        $result = $wpdb->insert($this->table_orders, $insert);
+        $result = $wpdb->insert($this->table_orders, $insert, Obydullah_ERP_Helpers::orerp_db_formats($insert));
         if ($result === false) {
             return new WP_Error('create_failed', __('Failed to create kitchen order.', 'obydullah-restaurant-erp'));
         }
@@ -108,7 +108,7 @@ class Obydullah_ERP_Order_Workflow
                 'name'             => sanitize_text_field($item['name']),
                 'quantity'         => intval($item['quantity']),
                 'status'           => 'pending',
-            ]);
+            ],['%s', '%s', '%s', '%d', '%s']);
         }
         Obydullah_ERP_Cache::invalidate($this->table_items);
 
@@ -146,7 +146,7 @@ class Obydullah_ERP_Order_Workflow
         )) ?: [];
 
         foreach ($order->items as &$item) {
-            $item->started_at = $item->started_at ?: 'orerp_';
+            $item->started_at = $item->started_at ?: '';
         }
 
         Obydullah_ERP_Cache::set($order_key, $this->table_orders, $order);
@@ -183,7 +183,7 @@ class Obydullah_ERP_Order_Workflow
             $update['started_at'] = current_time('mysql');
         }
 
-        $wpdb->update($this->table_items, $update, ['id' => intval($item_id)]);
+        $wpdb->update($this->table_items, $update, ['id' => intval($item_id)], Obydullah_ERP_Helpers::orerp_db_formats($update),['%d']);
         Obydullah_ERP_Cache::invalidate($this->table_items);
 
         $this->orerp_maybe_complete_order($item->kitchen_order_id);
@@ -223,7 +223,7 @@ class Obydullah_ERP_Order_Workflow
             $wpdb->update($this->table_orders, [
                 'status'       => 'ready',
                 'completed_at' => current_time('mysql'),
-            ], ['id' => intval($kitchen_order_id)]);
+            ], ['id' => intval($kitchen_order_id)],['%s', '%s'],['%d']);
             Obydullah_ERP_Cache::invalidate($this->table_orders);
         }
     }
@@ -241,7 +241,7 @@ class Obydullah_ERP_Order_Workflow
         $result = $this->orerp_create_from_order(
             intval($_POST['order_id'] ?? 0),
             intval($_POST['branch_id'] ?? 0),
-            sanitize_text_field(wp_unslash($_POST['station'] ?? 'orerp_')),
+            sanitize_text_field(wp_unslash($_POST['station'] ?? '')),
             intval($_POST['priority'] ?? 0)
         );
 
@@ -278,7 +278,7 @@ class Obydullah_ERP_Order_Workflow
         }
 
         $item_id = intval($_POST['item_id'] ?? 0);
-        $status  = sanitize_text_field(wp_unslash($_POST['status'] ?? 'orerp_'));
+        $status  = sanitize_text_field(wp_unslash($_POST['status'] ?? ''));
 
         $result = $this->orerp_update_item_status($item_id, $status);
 

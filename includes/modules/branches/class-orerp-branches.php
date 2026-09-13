@@ -18,7 +18,7 @@ class Obydullah_ERP_Branches
     public function __construct()
     {
         global $wpdb;
-        $this->table = $wpdb->prefix . 'erp_branches';
+        $this->table = $wpdb->prefix . 'orerp_branches';
 
         add_action('wp_ajax_orerp_get_branches', [$this, 'orerp_ajax_get_branches']);
         add_action('wp_ajax_orerp_save_branch', [$this, 'orerp_ajax_save_branch']);
@@ -84,39 +84,39 @@ class Obydullah_ERP_Branches
                 <form id="branch-form" method="post">
                     <input type="hidden" name="action" value="orerp_save_branch">
                     <?php wp_nonce_field('orerp_save_branch', 'branch_nonce'); ?>
-                    <input type="hidden" name="branch_id" id="branch-id" value="<?php echo esc_attr($branch->id ?? 'orerp_'); ?>">
+                    <input type="hidden" name="branch_id" id="branch-id" value="<?php echo esc_attr($branch->id ?? ''); ?>">
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="branch-name"><?php esc_html_e('Branch Name', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
                             <input type="text" id="branch-name" name="name" class="regular-text" required
-                                value="<?php echo esc_attr($branch->name ?? 'orerp_'); ?>">
+                                value="<?php echo esc_attr($branch->name ?? ''); ?>">
                         </div>
 
                         <div class="form-group">
                             <label for="branch-code"><?php esc_html_e('Branch Code', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
                             <input type="text" id="branch-code" name="code" class="regular-text" required
-                                value="<?php echo esc_attr($branch->code ?? 'orerp_'); ?>"
+                                value="<?php echo esc_attr($branch->code ?? ''); ?>"
                                 placeholder="<?php esc_attr_e('e.g. BR-001', 'obydullah-restaurant-erp'); ?>">
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="branch-address"><?php esc_html_e('Address', 'obydullah-restaurant-erp'); ?></label>
-                        <textarea id="branch-address" name="address" rows="3" class="large-text"><?php echo esc_textarea($branch->address ?? 'orerp_'); ?></textarea>
+                        <textarea id="branch-address" name="address" rows="3" class="large-text"><?php echo esc_textarea($branch->address ?? ''); ?></textarea>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="branch-phone"><?php esc_html_e('Phone', 'obydullah-restaurant-erp'); ?></label>
                             <input type="tel" id="branch-phone" name="phone" class="regular-text"
-                                value="<?php echo esc_attr($branch->phone ?? 'orerp_'); ?>">
+                                value="<?php echo esc_attr($branch->phone ?? ''); ?>">
                         </div>
 
                         <div class="form-group">
                             <label for="branch-email"><?php esc_html_e('Email', 'obydullah-restaurant-erp'); ?></label>
                             <input type="email" id="branch-email" name="email" class="regular-text"
-                                value="<?php echo esc_attr($branch->email ?? 'orerp_'); ?>">
+                                value="<?php echo esc_attr($branch->email ?? ''); ?>">
                         </div>
                     </div>
 
@@ -138,7 +138,7 @@ class Obydullah_ERP_Branches
                     <p class="submit">
                         <button type="submit" id="submit-branch" class="button button-primary">
                             <span class="btn-text"><?php esc_html_e('Save Branch', 'obydullah-restaurant-erp'); ?></span>
-                            <span class="spinner" style="display:none;"></span>
+                            <span class="spinner orerp-block-hidden"></span>
                         </button>
                     </p>
                 </form>
@@ -168,8 +168,8 @@ class Obydullah_ERP_Branches
         $defaults = [
             'per_page' => 20,
             'page'     => 1,
-            'search'   => 'orerp_',
-            'active'   => 'orerp_',
+            'search'   => '',
+            'active'   => '',
             'orderby'  => 'name',
             'order'    => 'ASC',
         ];
@@ -191,7 +191,7 @@ class Obydullah_ERP_Branches
             $prepare_args[] = '%' . $wpdb->esc_like($args['search']) . '%';
         }
 
-        if ($args['active'] !== 'orerp_') {
+        if ($args['active'] !== '') {
             $where .= ' AND is_active = %d';
             $prepare_args[] = intval($args['active']);
         }
@@ -247,11 +247,11 @@ class Obydullah_ERP_Branches
         global $wpdb;
 
         $id = intval($data['branch_id'] ?? 0);
-        $name = sanitize_text_field($data['name'] ?? 'orerp_');
-        $code = sanitize_text_field($data['code'] ?? 'orerp_');
-        $address = sanitize_textarea_field($data['address'] ?? 'orerp_');
-        $phone = sanitize_text_field($data['phone'] ?? 'orerp_');
-        $email = sanitize_email($data['email'] ?? 'orerp_');
+        $name = sanitize_text_field($data['name'] ?? '');
+        $code = sanitize_text_field($data['code'] ?? '');
+        $address = sanitize_textarea_field($data['address'] ?? '');
+        $phone = sanitize_text_field($data['phone'] ?? '');
+        $email = sanitize_email($data['email'] ?? '');
         $manager_id = intval($data['manager_id'] ?? 0);
         $is_active = isset($data['is_active']) ? 1 : 0;
 
@@ -280,9 +280,9 @@ class Obydullah_ERP_Branches
         ];
 
         if ($id > 0) {
-            $result = $wpdb->update($this->table, $save_data, ['id' => $id]);
+            $result = $wpdb->update($this->table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
         } else {
-            $result = $wpdb->insert($this->table, $save_data);
+            $result = $wpdb->insert($this->table, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
             $id = $wpdb->insert_id;
         }
 
@@ -300,7 +300,7 @@ class Obydullah_ERP_Branches
         global $wpdb;
         $id = intval($id);
 
-        $stock_table = $wpdb->prefix . 'erp_branch_stock';
+        $stock_table = $wpdb->prefix . 'orerp_branch_stock';
         $stock_count = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$stock_table} WHERE branch_id = %d AND quantity > 0",
             $id
@@ -310,8 +310,8 @@ class Obydullah_ERP_Branches
             return new WP_Error('has_stock', __('Cannot delete branch with stock items.', 'obydullah-restaurant-erp'));
         }
 
-        $result = $wpdb->delete($this->table, ['id' => $id]);
-        $wpdb->delete($stock_table, ['branch_id' => $id]);
+        $result = $wpdb->delete($this->table, ['id' => $id], ['%s']);
+        $wpdb->delete($stock_table, ['branch_id' => $id], ['%s']);
 
         Obydullah_ERP_Cache::invalidate($this->table);
         Obydullah_ERP_Cache::invalidate($stock_table);
@@ -329,7 +329,7 @@ class Obydullah_ERP_Branches
 
         $page = intval($_GET['page'] ?? 1);
         $per_page = intval($_GET['per_page'] ?? 20);
-        $search = sanitize_text_field(wp_unslash($_GET['search'] ?? 'orerp_'));
+        $search = sanitize_text_field(wp_unslash($_GET['search'] ?? ''));
 
         $result = $this->orerp_get_branches([
             'page'     => $page,
@@ -356,7 +356,7 @@ class Obydullah_ERP_Branches
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_branch($_POST);
+        $result = $this->orerp_save_branch(wp_unslash($_POST));
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
@@ -437,8 +437,8 @@ class Obydullah_ERP_Branches
     {
         global $wpdb;
 
-        $stock_table = $wpdb->prefix . 'erp_branch_stock';
-        $defaults = ['per_page' => 20, 'page' => 1, 'search' => 'orerp_'];
+        $stock_table = $wpdb->prefix . 'orerp_branch_stock';
+        $defaults = ['per_page' => 20, 'page' => 1, 'search' => ''];
         $args = wp_parse_args($args, $defaults);
 
         $cache_key = 'branch_stock_' . $branch_id . '_' . $args['page'] . '_' . $args['per_page'] . '_' . $args['search'];
@@ -483,11 +483,11 @@ class Obydullah_ERP_Branches
         return $return;
     }
 
-    public function orerp_update_branch_stock($branch_id, $product_id, $quantity, $note = 'orerp_')
+    public function orerp_update_branch_stock($branch_id, $product_id, $quantity, $note = '')
     {
         global $wpdb;
 
-        $stock_table = $wpdb->prefix . 'erp_branch_stock';
+        $stock_table = $wpdb->prefix . 'orerp_branch_stock';
 
         $current = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM {$stock_table} WHERE branch_id = %d AND product_id = %d",
@@ -505,14 +505,14 @@ class Obydullah_ERP_Branches
             ], [
                 'branch_id'  => $branch_id,
                 'product_id' => $product_id,
-            ]);
+            ],['%s', '%s'],['%s', '%s']);
         } else {
             $wpdb->insert($stock_table, [
                 'branch_id'       => $branch_id,
                 'product_id'      => $product_id,
                 'quantity'        => $new_qty,
                 'last_restocked'  => current_time('mysql'),
-            ]);
+            ],['%s', '%s', '%s', '%s']);
         }
 
         Obydullah_ERP_Cache::invalidate($stock_table);

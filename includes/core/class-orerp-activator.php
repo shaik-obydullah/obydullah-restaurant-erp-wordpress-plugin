@@ -53,7 +53,7 @@ class Obydullah_ERP_Activator
 
         if ($db_version < 1) {
             global $wpdb;
-            $table = $wpdb->prefix . 'erp_journal_entries';
+            $table = $wpdb->prefix . 'orerp_journal_entries';
 
             $column = $wpdb->get_var($wpdb->prepare(
                 "SELECT COUNT(*) FROM information_schema.COLUMNS
@@ -72,6 +72,31 @@ class Obydullah_ERP_Activator
 
             update_option('orerp_db_version', 1, false);
         }
+
+        if ($db_version < 2) {
+            global $wpdb;
+
+            $tables = [
+                'accounts', 'attendance', 'branches', 'branch_stock', 'employees',
+                'fiscal_periods', 'journal_entries', 'journal_lines',
+                'kitchen_order_items', 'kitchen_orders', 'prep_tracking',
+                'purchase_items', 'purchase_orders', 'purchase_payments',
+                'recipe_ingredients', 'recipes', 'shifts', 'supplier_products',
+                'suppliers', 'transfer_items', 'transfers',
+            ];
+
+            foreach ($tables as $table) {
+                $old_table = $wpdb->prefix . 'erp_' . $table;
+                $new_table = $wpdb->prefix . 'orerp_' . $table;
+
+                $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $old_table));
+                if ($exists) {
+                    $wpdb->query("RENAME TABLE {$old_table} TO {$new_table}");
+                }
+            }
+
+            update_option('orerp_db_version', 2, false);
+        }
     }
 
     /**
@@ -88,10 +113,10 @@ class Obydullah_ERP_Activator
     {
         global $wpdb;
 
-        $table_branches = $wpdb->prefix . 'erp_branches';
-        $table_branch_stock = $wpdb->prefix . 'erp_branch_stock';
-        $table_transfers = $wpdb->prefix . 'erp_transfers';
-        $table_transfer_items = $wpdb->prefix . 'erp_transfer_items';
+        $table_branches = $wpdb->prefix . 'orerp_branches';
+        $table_branch_stock = $wpdb->prefix . 'orerp_branch_stock';
+        $table_transfers = $wpdb->prefix . 'orerp_transfers';
+        $table_transfer_items = $wpdb->prefix . 'orerp_transfer_items';
 
         $sql = "CREATE TABLE {$table_branches} (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -153,9 +178,9 @@ class Obydullah_ERP_Activator
     {
         global $wpdb;
 
-        $table_employees = $wpdb->prefix . 'erp_employees';
-        $table_attendance = $wpdb->prefix . 'erp_attendance';
-        $table_shifts = $wpdb->prefix . 'erp_shifts';
+        $table_employees = $wpdb->prefix . 'orerp_employees';
+        $table_attendance = $wpdb->prefix . 'orerp_attendance';
+        $table_shifts = $wpdb->prefix . 'orerp_shifts';
 
         $sql = "CREATE TABLE {$table_employees} (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -206,8 +231,8 @@ class Obydullah_ERP_Activator
     {
         global $wpdb;
 
-        $table_suppliers = $wpdb->prefix . 'erp_suppliers';
-        $table_supplier_products = $wpdb->prefix . 'erp_supplier_products';
+        $table_suppliers = $wpdb->prefix . 'orerp_suppliers';
+        $table_supplier_products = $wpdb->prefix . 'orerp_supplier_products';
 
         $sql = "CREATE TABLE {$table_suppliers} (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -245,9 +270,9 @@ class Obydullah_ERP_Activator
     {
         global $wpdb;
 
-        $table_purchase_orders = $wpdb->prefix . 'erp_purchase_orders';
-        $table_purchase_items = $wpdb->prefix . 'erp_purchase_items';
-        $table_purchase_payments = $wpdb->prefix . 'erp_purchase_payments';
+        $table_purchase_orders = $wpdb->prefix . 'orerp_purchase_orders';
+        $table_purchase_items = $wpdb->prefix . 'orerp_purchase_items';
+        $table_purchase_payments = $wpdb->prefix . 'orerp_purchase_payments';
 
         $sql = "CREATE TABLE {$table_purchase_orders} (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -302,10 +327,10 @@ class Obydullah_ERP_Activator
     {
         global $wpdb;
 
-        $table_accounts = $wpdb->prefix . 'erp_accounts';
-        $table_journal_entries = $wpdb->prefix . 'erp_journal_entries';
-        $table_journal_lines = $wpdb->prefix . 'erp_journal_lines';
-        $table_fiscal_periods = $wpdb->prefix . 'erp_fiscal_periods';
+        $table_accounts = $wpdb->prefix . 'orerp_accounts';
+        $table_journal_entries = $wpdb->prefix . 'orerp_journal_entries';
+        $table_journal_lines = $wpdb->prefix . 'orerp_journal_lines';
+        $table_fiscal_periods = $wpdb->prefix . 'orerp_fiscal_periods';
 
         $sql = "CREATE TABLE {$table_accounts} (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -367,11 +392,11 @@ class Obydullah_ERP_Activator
     {
         global $wpdb;
 
-        $table_recipes = $wpdb->prefix . 'erp_recipes';
-        $table_recipe_ingredients = $wpdb->prefix . 'erp_recipe_ingredients';
-        $table_kitchen_orders = $wpdb->prefix . 'erp_kitchen_orders';
-        $table_kitchen_order_items = $wpdb->prefix . 'erp_kitchen_order_items';
-        $table_prep_tracking = $wpdb->prefix . 'erp_prep_tracking';
+        $table_recipes = $wpdb->prefix . 'orerp_recipes';
+        $table_recipe_ingredients = $wpdb->prefix . 'orerp_recipe_ingredients';
+        $table_kitchen_orders = $wpdb->prefix . 'orerp_kitchen_orders';
+        $table_kitchen_order_items = $wpdb->prefix . 'orerp_kitchen_order_items';
+        $table_prep_tracking = $wpdb->prefix . 'orerp_prep_tracking';
 
         $sql = "CREATE TABLE {$table_recipes} (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -450,7 +475,7 @@ class Obydullah_ERP_Activator
     {
         global $wpdb;
 
-        $accounts_table = $wpdb->prefix . 'erp_accounts';
+        $accounts_table = $wpdb->prefix . 'orerp_accounts';
         $exists = $wpdb->get_var("SHOW TABLES LIKE '{$accounts_table}'");
 
         if ($exists) {

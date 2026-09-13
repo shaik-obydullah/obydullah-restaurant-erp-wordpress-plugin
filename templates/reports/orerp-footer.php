@@ -17,5 +17,6 @@ if (!defined('ABSPATH')) {
             esc_html(get_bloginfo('name'));
         ?>
     </div>
+    <?php wp_print_scripts(array('orerp-report-print')); ?>
 </body>
 </html>

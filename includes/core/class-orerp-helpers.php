@@ -59,7 +59,7 @@ class Obydullah_ERP_Helpers
     public static function orerp_format_date($date_string)
     {
         if (empty($date_string)) {
-            return 'orerp_';
+            return '';
         }
 
         $settings = self::orerp_get_settings();
@@ -94,7 +94,7 @@ class Obydullah_ERP_Helpers
     public static function orerp_generate_po_number()
     {
         global $wpdb;
-        $table = $wpdb->prefix . 'erp_purchase_orders';
+        $table = $wpdb->prefix . 'orerp_purchase_orders';
         $prefix = 'PO-' . gmdate('Ymd') . '-';
 
         $last = $wpdb->get_var(
@@ -117,7 +117,7 @@ class Obydullah_ERP_Helpers
     public static function orerp_generate_entry_number()
     {
         global $wpdb;
-        $table = $wpdb->prefix . 'erp_journal_entries';
+        $table = $wpdb->prefix . 'orerp_journal_entries';
         $prefix = 'JE-' . gmdate('Ymd') . '-';
 
         $last = $wpdb->get_var(
@@ -140,7 +140,7 @@ class Obydullah_ERP_Helpers
     public static function orerp_generate_employee_code()
     {
         global $wpdb;
-        $table = $wpdb->prefix . 'erp_employees';
+        $table = $wpdb->prefix . 'orerp_employees';
         $prefix = 'EMP-';
 
         $last = $wpdb->get_var(
@@ -160,10 +160,25 @@ class Obydullah_ERP_Helpers
         return $prefix . str_pad($new_num, 4, '0', STR_PAD_LEFT);
     }
 
+    public static function orerp_db_formats(array $data)
+    {
+        $formats = [];
+        foreach ($data as $value) {
+            if (is_int($value)) {
+                $formats[] = '%d';
+            } elseif (is_float($value)) {
+                $formats[] = '%f';
+            } else {
+                $formats[] = '%s';
+            }
+        }
+        return $formats;
+    }
+
     public static function orerp_generate_supplier_code()
     {
         global $wpdb;
-        $table = $wpdb->prefix . 'erp_suppliers';
+        $table = $wpdb->prefix . 'orerp_suppliers';
         $prefix = 'SUP-';
 
         $last = $wpdb->get_var(
@@ -186,7 +201,7 @@ class Obydullah_ERP_Helpers
     public static function orerp_get_account_id_by_code($code)
     {
         global $wpdb;
-        $table = $wpdb->prefix . 'erp_accounts';
+        $table = $wpdb->prefix . 'orerp_accounts';
 
         $cache_key = 'account_id_by_code_' . $code;
         $cached = Obydullah_ERP_Cache::get($cache_key, $table);
@@ -205,7 +220,7 @@ class Obydullah_ERP_Helpers
 
     public static function orerp_sanitize_price($price)
     {
-        return floatval(preg_replace('/[^0-9.\-]/', 'orerp_', $price));
+        return floatval(preg_replace('/[^0-9.\-]/', '', $price));
     }
 
     public static function orerp_is_valid_date($date, $format = 'Y-m-d')

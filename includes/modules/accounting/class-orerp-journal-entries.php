@@ -19,8 +19,8 @@ class Obydullah_ERP_Journal_Entries
     public function __construct()
     {
         global $wpdb;
-        $this->entries_table = $wpdb->prefix . 'erp_journal_entries';
-        $this->lines_table = $wpdb->prefix . 'erp_journal_lines';
+        $this->entries_table = $wpdb->prefix . 'orerp_journal_entries';
+        $this->lines_table = $wpdb->prefix . 'orerp_journal_lines';
 
         add_action('wp_ajax_orerp_get_journal_entries', [$this, 'orerp_ajax_get_entries']);
         add_action('wp_ajax_orerp_save_journal_entry', [$this, 'orerp_ajax_save_entry']);
@@ -89,7 +89,7 @@ class Obydullah_ERP_Journal_Entries
                 <form id="journal-form" method="post">
                     <input type="hidden" name="action" value="orerp_save_journal_entry">
                     <?php wp_nonce_field('orerp_save_journal_entry', 'journal_nonce'); ?>
-                    <input type="hidden" name="entry_id" value="<?php echo esc_attr($entry->id ?? 'orerp_'); ?>">
+                    <input type="hidden" name="entry_id" value="<?php echo esc_attr($entry->id ?? ''); ?>">
 
                     <div class="form-row">
                         <div class="form-group">
@@ -106,7 +106,7 @@ class Obydullah_ERP_Journal_Entries
 
                     <div class="form-group">
                         <label><?php esc_html_e('Description', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
-                        <textarea name="description" rows="2" class="large-text" required><?php echo esc_textarea($entry->description ?? 'orerp_'); ?></textarea>
+                        <textarea name="description" rows="2" class="large-text" required><?php echo esc_textarea($entry->description ?? ''); ?></textarea>
                     </div>
 
                     <h3><?php esc_html_e('Journal Lines', 'obydullah-restaurant-erp'); ?></h3>
@@ -132,7 +132,7 @@ class Obydullah_ERP_Journal_Entries
                                     </select>
                                     <input type="hidden" name="lines[<?php echo esc_attr($line->id); ?>][id]" value="<?php echo esc_attr($line->id); ?>">
                                 </td>
-                                <td><input type="text" name="lines[<?php echo esc_attr($line->id); ?>][description]" class="line-desc" value="<?php echo esc_attr($line->description ?? 'orerp_'); ?>"></td>
+                                <td><input type="text" name="lines[<?php echo esc_attr($line->id); ?>][description]" class="line-desc" value="<?php echo esc_attr($line->description ?? ''); ?>"></td>
                                 <td><input type="number" name="lines[<?php echo esc_attr($line->id); ?>][debit]" class="line-debit" step="0.01" min="0" value="<?php echo esc_attr($line->debit); ?>"></td>
                                 <td><input type="number" name="lines[<?php echo esc_attr($line->id); ?>][credit]" class="line-credit" step="0.01" min="0" value="<?php echo esc_attr($line->credit); ?>"></td>
                                 <td><button type="button" class="button remove-line">X</button></td>
@@ -158,10 +158,10 @@ class Obydullah_ERP_Journal_Entries
                         </tfoot>
                     </table>
 
-                    <p class="submit" style="margin-top: 15px;">
+                    <p class="submit orerp-margin-top-15">
                         <button type="submit" id="submit-journal" class="button button-primary">
                             <span class="btn-text"><?php esc_html_e('Save Entry', 'obydullah-restaurant-erp'); ?></span>
-                            <span class="spinner" style="display:none;"></span>
+                            <span class="spinner orerp-block-hidden"></span>
                         </button>
                         <?php if ($mode === 'edit' && isset($entry->is_posted) && !$entry->is_posted): ?>
                         <button type="button" id="post-journal" class="button button-secondary" data-id="<?php echo esc_attr($entry->id); ?>">
@@ -179,7 +179,7 @@ class Obydullah_ERP_Journal_Entries
     {
         global $wpdb;
 
-        $defaults = ['per_page' => 20, 'page' => 1, 'date_from' => 'orerp_', 'date_to' => 'orerp_', 'posted' => 'orerp_'];
+        $defaults = ['per_page' => 20, 'page' => 1, 'date_from' => '', 'date_to' => '', 'posted' => ''];
         $args = wp_parse_args($args, $defaults);
 
         $where = '1=1';
@@ -195,7 +195,7 @@ class Obydullah_ERP_Journal_Entries
             $prepare_args[] = $args['date_to'];
         }
 
-        if ($args['posted'] !== 'orerp_') {
+        if ($args['posted'] !== '') {
             $where .= ' AND is_posted = %d';
             $prepare_args[] = intval($args['posted']);
         }
@@ -273,7 +273,7 @@ class Obydullah_ERP_Journal_Entries
         $lines = $wpdb->get_results($wpdb->prepare(
             "SELECT jl.*, ja.code as account_code, ja.name as account_name
             FROM {$this->lines_table} jl
-            LEFT JOIN {$wpdb->prefix}erp_accounts ja ON jl.account_id = ja.id
+            LEFT JOIN {$wpdb->prefix}orerp_accounts ja ON jl.account_id = ja.id
             WHERE jl.entry_id = %d
             ORDER BY jl.id",
             $entry_id
@@ -308,8 +308,8 @@ class Obydullah_ERP_Journal_Entries
 
         $entry_number = sanitize_text_field($data['entry_number'] ?? Obydullah_ERP_Helpers::orerp_generate_entry_number());
         $date = sanitize_text_field($data['date'] ?? current_time('Y-m-d'));
-        $description = sanitize_textarea_field($data['description'] ?? 'orerp_');
-        $reference_type = sanitize_text_field($data['reference_type'] ?? 'orerp_');
+        $description = sanitize_textarea_field($data['description'] ?? '');
+        $reference_type = sanitize_text_field($data['reference_type'] ?? '');
         $reference_id = intval($data['reference_id'] ?? 0);
         $branch_id = intval($data['branch_id'] ?? 0);
         $lines = $data['lines'] ?? [];
@@ -339,7 +339,7 @@ class Obydullah_ERP_Journal_Entries
             'branch_id'      => $branch_id > 0 ? $branch_id : null,
             'is_posted'      => 1,
             'created_by'     => get_current_user_id(),
-        ]);
+        ],['%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s']);
 
         $entry_id = $wpdb->insert_id;
 
@@ -351,7 +351,7 @@ class Obydullah_ERP_Journal_Entries
 
         foreach ($lines as $line) {
             $account_id = intval($line['account_id'] ?? 0);
-            $account_code = sanitize_text_field($line['account_code'] ?? 'orerp_');
+            $account_code = sanitize_text_field($line['account_code'] ?? '');
 
             if (!$account_id && !empty($account_code)) {
                 $account = Obydullah_ERP_Helpers::orerp_get_account_id_by_code($account_code);
@@ -364,8 +364,8 @@ class Obydullah_ERP_Journal_Entries
                     'account_id'  => $account_id,
                     'debit'       => floatval($line['debit'] ?? 0),
                     'credit'      => floatval($line['credit'] ?? 0),
-                    'description' => sanitize_text_field($line['description'] ?? 'orerp_'),
-                ]);
+                    'description' => sanitize_text_field($line['description'] ?? ''),
+                ],['%s', '%s', '%f', '%f', '%s']);
             }
         }
 
@@ -380,8 +380,8 @@ class Obydullah_ERP_Journal_Entries
 
         $id = intval($data['entry_id'] ?? 0);
         $entry_number = sanitize_text_field($data['entry_number'] ?? Obydullah_ERP_Helpers::orerp_generate_entry_number());
-        $date = sanitize_text_field($data['date'] ?? 'orerp_');
-        $description = sanitize_textarea_field($data['description'] ?? 'orerp_');
+        $date = sanitize_text_field($data['date'] ?? '');
+        $description = sanitize_textarea_field($data['description'] ?? '');
         $branch_id = intval($data['branch_id'] ?? 0);
         $lines = $data['lines'] ?? [];
 
@@ -414,8 +414,8 @@ class Obydullah_ERP_Journal_Entries
                 'date'         => $date,
                 'description'  => $description,
                 'branch_id'    => $branch_id > 0 ? $branch_id : null,
-            ], ['id' => $id]);
-            $wpdb->delete($this->lines_table, ['entry_id' => $id]);
+            ], ['id' => $id],['%s', '%s', '%s', '%s'], ['%s']);
+            $wpdb->delete($this->lines_table, ['entry_id' => $id], ['%s']);
         } else {
             $wpdb->insert($this->entries_table, [
                 'entry_number' => $entry_number,
@@ -424,7 +424,7 @@ class Obydullah_ERP_Journal_Entries
                 'branch_id'    => $branch_id > 0 ? $branch_id : null,
                 'is_posted'    => 0,
                 'created_by'   => get_current_user_id(),
-            ]);
+            ],['%s', '%s', '%s', '%s', '%d', '%s']);
             $id = $wpdb->insert_id;
         }
 
@@ -433,7 +433,7 @@ class Obydullah_ERP_Journal_Entries
 
         foreach ($lines as $line) {
             $account_id = intval($line['account_id'] ?? 0);
-            $account_code = sanitize_text_field($line['account_code'] ?? 'orerp_');
+            $account_code = sanitize_text_field($line['account_code'] ?? '');
 
             if (!$account_id && !empty($account_code)) {
                 $account = Obydullah_ERP_Helpers::orerp_get_account_id_by_code($account_code);
@@ -446,8 +446,8 @@ class Obydullah_ERP_Journal_Entries
                     'account_id'  => $account_id,
                     'debit'       => floatval($line['debit'] ?? 0),
                     'credit'      => floatval($line['credit'] ?? 0),
-                    'description' => sanitize_text_field($line['description'] ?? 'orerp_'),
-                ]);
+                    'description' => sanitize_text_field($line['description'] ?? ''),
+                ],['%s', '%s', '%f', '%f', '%s']);
             }
         }
 
@@ -474,7 +474,7 @@ class Obydullah_ERP_Journal_Entries
             return new WP_Error('unbalanced', __('Cannot post unbalanced entry.', 'obydullah-restaurant-erp'));
         }
 
-        $wpdb->update($this->entries_table, ['is_posted' => 1], ['id' => $id]);
+        $wpdb->update($this->entries_table, ['is_posted' => 1], ['id' => $id],['%d'], ['%s']);
         Obydullah_ERP_Cache::invalidate($this->entries_table);
         return true;
     }
@@ -489,20 +489,20 @@ class Obydullah_ERP_Journal_Entries
             return new WP_Error('already_posted', __('Cannot delete posted entries.', 'obydullah-restaurant-erp'));
         }
 
-        $wpdb->delete($this->lines_table, ['entry_id' => $id]);
-        $wpdb->delete($this->entries_table, ['id' => $id]);
+        $wpdb->delete($this->lines_table, ['entry_id' => $id], ['%s']);
+        $wpdb->delete($this->entries_table, ['id' => $id], ['%s']);
         Obydullah_ERP_Cache::invalidate($this->entries_table);
         Obydullah_ERP_Cache::invalidate($this->lines_table);
         return true;
     }
 
-    public function orerp_get_profit_loss($from = 'orerp_', $to = 'orerp_')
+    public function orerp_get_profit_loss($from = '', $to = '')
     {
         $financial = new Obydullah_ERP_Financial_Reports();
         return $financial->get_profit_loss($from, $to);
     }
 
-    public function orerp_get_balance_sheet($as_of = 'orerp_')
+    public function orerp_get_balance_sheet($as_of = '')
     {
         $financial = new Obydullah_ERP_Financial_Reports();
         return $financial->get_balance_sheet($as_of);
@@ -520,8 +520,8 @@ class Obydullah_ERP_Journal_Entries
         $result = $this->orerp_get_entries([
             'per_page'  => intval($_GET['per_page'] ?? 20),
             'page'      => intval($_GET['page'] ?? 1),
-            'date_from' => sanitize_text_field(wp_unslash($_GET['date_from'] ?? 'orerp_')),
-            'date_to'   => sanitize_text_field(wp_unslash($_GET['date_to'] ?? 'orerp_')),
+            'date_from' => sanitize_text_field(wp_unslash($_GET['date_from'] ?? '')),
+            'date_to'   => sanitize_text_field(wp_unslash($_GET['date_to'] ?? '')),
         ]);
 
         wp_send_json_success($result);
@@ -534,7 +534,7 @@ class Obydullah_ERP_Journal_Entries
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_entry($_POST);
+        $result = $this->orerp_save_entry(wp_unslash($_POST));
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }
@@ -602,8 +602,8 @@ class Obydullah_ERP_Journal_Entries
         }
 
         $type = sanitize_text_field(wp_unslash($_GET['type'] ?? 'pl'));
-        $from = sanitize_text_field(wp_unslash($_GET['from'] ?? 'orerp_'));
-        $to   = sanitize_text_field(wp_unslash($_GET['to'] ?? 'orerp_'));
+        $from = sanitize_text_field(wp_unslash($_GET['from'] ?? ''));
+        $to   = sanitize_text_field(wp_unslash($_GET['to'] ?? ''));
 
         if ($type === 'pl') {
             wp_send_json_success($this->orerp_get_profit_loss($from, $to));

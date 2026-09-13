@@ -19,8 +19,8 @@ class Obydullah_ERP_Recipes
     public function __construct()
     {
         global $wpdb;
-        $this->table_recipes     = $wpdb->prefix . 'erp_recipes';
-        $this->table_ingredients = $wpdb->prefix . 'erp_recipe_ingredients';
+        $this->table_recipes     = $wpdb->prefix . 'orerp_recipes';
+        $this->table_ingredients = $wpdb->prefix . 'orerp_recipe_ingredients';
 
         add_action('wp_ajax_orerp_get_recipes', [$this, 'orerp_ajax_get_recipes']);
         add_action('wp_ajax_orerp_save_recipe', [$this, 'orerp_ajax_save_recipe']);
@@ -87,13 +87,13 @@ class Obydullah_ERP_Recipes
                 <form id="recipe-form" method="post">
                     <input type="hidden" name="action" value="orerp_save_recipe">
                     <?php wp_nonce_field('orerp_recipes', 'recipe_nonce'); ?>
-                    <input type="hidden" name="recipe_id" value="<?php echo esc_attr($recipe->id ?? 'orerp_'); ?>">
+                    <input type="hidden" name="recipe_id" value="<?php echo esc_attr($recipe->id ?? ''); ?>">
 
                     <div class="form-row">
                         <div class="form-group">
                             <label><?php esc_html_e('Recipe Name', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
                             <input type="text" name="name" class="regular-text" required
-                                value="<?php echo esc_attr($recipe->name ?? 'orerp_'); ?>">
+                                value="<?php echo esc_attr($recipe->name ?? ''); ?>">
                         </div>
                         <div class="form-group">
                             <label><?php esc_html_e('Linked Product', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
@@ -114,12 +114,12 @@ class Obydullah_ERP_Recipes
                         <div class="form-group">
                             <label><?php esc_html_e('Prep Time (min)', 'obydullah-restaurant-erp'); ?></label>
                             <input type="number" name="prep_time_minutes" class="small-text" min="0"
-                                value="<?php echo esc_attr($recipe->prep_time_minutes ?? 'orerp_'); ?>">
+                                value="<?php echo esc_attr($recipe->prep_time_minutes ?? ''); ?>">
                         </div>
                         <div class="form-group">
                             <label><?php esc_html_e('Cook Time (min)', 'obydullah-restaurant-erp'); ?></label>
                             <input type="number" name="cook_time_minutes" class="small-text" min="0"
-                                value="<?php echo esc_attr($recipe->cook_time_minutes ?? 'orerp_'); ?>">
+                                value="<?php echo esc_attr($recipe->cook_time_minutes ?? ''); ?>">
                         </div>
                         <div class="form-group">
                             <label>
@@ -131,7 +131,7 @@ class Obydullah_ERP_Recipes
 
                     <div class="form-group">
                         <label><?php esc_html_e('Instructions', 'obydullah-restaurant-erp'); ?></label>
-                        <textarea name="instructions" rows="4" class="large-text"><?php echo esc_textarea($recipe->instructions ?? 'orerp_'); ?></textarea>
+                        <textarea name="instructions" rows="4" class="large-text"><?php echo esc_textarea($recipe->instructions ?? ''); ?></textarea>
                     </div>
 
                     <!-- Ingredients Section -->
@@ -174,7 +174,7 @@ class Obydullah_ERP_Recipes
                     <p class="submit">
                         <button type="submit" id="submit-recipe" class="button button-primary">
                             <span class="btn-text"><?php esc_html_e('Save Recipe', 'obydullah-restaurant-erp'); ?></span>
-                            <span class="spinner" style="display:none;"></span>
+                            <span class="spinner orerp-block-hidden"></span>
                         </button>
                     </p>
                 </form>
@@ -206,13 +206,13 @@ class Obydullah_ERP_Recipes
     {
         global $wpdb;
 
-        $defaults = ['per_page' => 20, 'page' => 1, 'active' => 'orerp_', 'search' => 'orerp_'];
+        $defaults = ['per_page' => 20, 'page' => 1, 'active' => '', 'search' => ''];
         $args = wp_parse_args($args, $defaults);
 
         $where = '1=1';
         $prepare_args = [];
 
-        if ($args['active'] !== 'orerp_') {
+        if ($args['active'] !== '') {
             $where .= ' AND r.is_active = %d';
             $prepare_args[] = intval($args['active']);
         }
@@ -319,11 +319,11 @@ class Obydullah_ERP_Recipes
 
         $id = intval($data['recipe_id'] ?? 0);
         $product_id = intval($data['product_id'] ?? 0);
-        $name = sanitize_text_field($data['name'] ?? 'orerp_');
+        $name = sanitize_text_field($data['name'] ?? '');
         $servings = intval($data['servings'] ?? 1);
         $prep_time = intval($data['prep_time_minutes'] ?? 0) ?: null;
         $cook_time = intval($data['cook_time_minutes'] ?? 0) ?: null;
-        $instructions = sanitize_textarea_field($data['instructions'] ?? 'orerp_');
+        $instructions = sanitize_textarea_field($data['instructions'] ?? '');
         $is_active = isset($data['is_active']) ? 1 : 0;
 
         if (empty($name) || $product_id <= 0) {
@@ -341,16 +341,16 @@ class Obydullah_ERP_Recipes
         ];
 
         if ($id > 0) {
-            $wpdb->update($this->table_recipes, $save_data, ['id' => $id]);
+            $wpdb->update($this->table_recipes, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
             Obydullah_ERP_Cache::invalidate($this->table_recipes);
         } else {
-            $wpdb->insert($this->table_recipes, $save_data);
+            $wpdb->insert($this->table_recipes, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
             $id = $wpdb->insert_id;
             Obydullah_ERP_Cache::invalidate($this->table_recipes);
         }
 
         // Save ingredients
-        $wpdb->delete($this->table_ingredients, ['recipe_id' => $id]);
+        $wpdb->delete($this->table_ingredients, ['recipe_id' => $id], ['%s']);
 
         $ingredients = $data['ingredients'] ?? [];
         foreach ($ingredients as $ing) {
@@ -361,9 +361,9 @@ class Obydullah_ERP_Recipes
                 'recipe_id'  => $id,
                 'product_id' => $product_id_ing,
                 'quantity'   => floatval($ing['quantity'] ?? 0),
-                'unit'       => sanitize_text_field($ing['unit'] ?? 'orerp_'),
-                'notes'      => sanitize_text_field($ing['notes'] ?? 'orerp_'),
-            ]);
+                'unit'       => sanitize_text_field($ing['unit'] ?? ''),
+                'notes'      => sanitize_text_field($ing['notes'] ?? ''),
+            ],['%s', '%s', '%f', '%s', '%s']);
         }
         Obydullah_ERP_Cache::invalidate($this->table_ingredients);
 
@@ -374,9 +374,9 @@ class Obydullah_ERP_Recipes
     {
         global $wpdb;
 
-        $wpdb->delete($this->table_ingredients, ['recipe_id' => intval($id)]);
+        $wpdb->delete($this->table_ingredients, ['recipe_id' => intval($id)],['%d']);
         Obydullah_ERP_Cache::invalidate($this->table_ingredients);
-        $wpdb->delete($this->table_recipes, ['id' => intval($id)]);
+        $wpdb->delete($this->table_recipes, ['id' => intval($id)],['%d']);
         Obydullah_ERP_Cache::invalidate($this->table_recipes);
 
         return true;
@@ -403,8 +403,8 @@ class Obydullah_ERP_Recipes
         $args = [
             'page'     => intval($_GET['page'] ?? 1),
             'per_page' => 20,
-            'search'   => sanitize_text_field(wp_unslash($_GET['search'] ?? 'orerp_')),
-            'active'   => isset($_GET['active']) ? intval($_GET['active']) : 'orerp_',
+            'search'   => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
+            'active'   => isset($_GET['active']) ? intval($_GET['active']) : '',
         ];
 
         wp_send_json_success($this->orerp_get_recipes($args));
@@ -417,7 +417,7 @@ class Obydullah_ERP_Recipes
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_recipe($_POST);
+        $result = $this->orerp_save_recipe(wp_unslash($_POST));
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }

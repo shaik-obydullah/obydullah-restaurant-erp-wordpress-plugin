@@ -24,9 +24,9 @@ class Obydullah_ERP_Ledger
     {
         global $wpdb;
 
-        $this->table_entries  = $wpdb->prefix . 'erp_journal_entries';
-        $this->table_lines    = $wpdb->prefix . 'erp_journal_lines';
-        $this->table_accounts = $wpdb->prefix . 'erp_accounts';
+        $this->table_entries  = $wpdb->prefix . 'orerp_journal_entries';
+        $this->table_lines    = $wpdb->prefix . 'orerp_journal_lines';
+        $this->table_accounts = $wpdb->prefix . 'orerp_accounts';
 
         add_action('wp_ajax_orerp_get_ledger', [$this, 'orerp_ajax_get_ledger']);
     }
@@ -57,7 +57,7 @@ class Obydullah_ERP_Ledger
             <hr class="wp-header-end">
 
             <div class="orerp-card">
-                <div class="orerp-filters" style="margin-bottom:15px;">
+                <div class="orerp-filters orerp-filters-compact">
                     <div class="filter-group">
                         <label><?php esc_html_e('From', 'obydullah-restaurant-erp'); ?></label>
                         <input type="date" id="ledger-date-from" class="regular-text"
@@ -92,7 +92,7 @@ class Obydullah_ERP_Ledger
         <?php
     }
 
-    public function orerp_get_ledger($from = 'orerp_', $to = 'orerp_', $account_id = 0)
+    public function orerp_get_ledger($from = '', $to = '', $account_id = 0)
     {
         global $wpdb;
 
@@ -234,8 +234,8 @@ class Obydullah_ERP_Ledger
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $from       = sanitize_text_field(wp_unslash($_POST['from'] ?? 'orerp_'));
-        $to         = sanitize_text_field(wp_unslash($_POST['to'] ?? 'orerp_'));
+        $from       = sanitize_text_field(wp_unslash($_POST['from'] ?? ''));
+        $to         = sanitize_text_field(wp_unslash($_POST['to'] ?? ''));
         $account_id = intval($_POST['account_id'] ?? 0);
 
         $result = $this->orerp_get_ledger($from, $to, $account_id);

@@ -299,6 +299,19 @@
 }
 
 /* ============================================
+   Utility classes (inline-style replacements)
+   ============================================ */
+
+.orerp-print-actions-margin { margin: 8px 0 12px; }
+.orerp-filters-compact { margin-bottom: 15px; }
+.orerp-block-hidden { display: none; }
+.orerp-margin-top-15 { margin-top: 15px; }
+.orerp-margin-bottom-20 { margin-bottom: 20px; }
+.orerp-flex-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.orerp-kds-board { margin-bottom: 20px; }
+.orerp-branch-selector-wrap { margin-left: -1.3rem; }
+
+/* ============================================
    Filters & Search
    ============================================ */
 

@@ -1,0 +1,1739 @@
+# Copyright (C) 2026 Shaik Obydullah
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Obydullah Restaurant ERP 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/obydullah-restaurant-erp\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-09-09T23:31:12+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: obydullah-restaurant-erp\n"
+
+#. Plugin Name of the plugin
+#: obydullah-restaurant-erp.php
+msgid "Obydullah Restaurant ERP"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: obydullah-restaurant-erp.php
+msgid "https://obydullah.com/project/restaurant-micro-erp"
+msgstr ""
+
+#. Description of the plugin
+#: obydullah-restaurant-erp.php
+msgid "A complete restaurant management system with branches, employees, suppliers, purchases, accounting, kitchen operations, and reports."
+msgstr ""
+
+#. Author of the plugin
+#: obydullah-restaurant-erp.php
+msgid "Shaik Obydullah"
+msgstr ""
+
+#. Author URI of the plugin
+#: obydullah-restaurant-erp.php
+msgid "https://obydullah.com"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:132
+#: includes/core/class-orerp-handler.php:133
+msgid "Restaurant ERP"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:143
+#: includes/core/class-orerp-handler.php:144
+msgid "Dashboard"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:152
+#: includes/modules/branches/class-orerp-branches.php:45
+msgid "Branches"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:157
+#: includes/modules/employees/class-orerp-employees.php:45
+#: templates/reports/orerp-branches.php:21
+msgid "Employees"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:162
+#: includes/modules/employees/class-orerp-attendance.php:62
+msgid "Attendance & Shifts"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:167
+#: includes/modules/employees/class-orerp-roles.php:87
+msgid "Roles & Permissions"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:172
+#: includes/modules/suppliers/class-orerp-suppliers.php:49
+msgid "Suppliers"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:177
+msgid "Purchases"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:182
+msgid "Accounting"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:187
+#: includes/modules/accounting/class-orerp-journal-entries.php:48
+msgid "Journal Entries"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:192
+#: includes/modules/accounting/class-orerp-ledger.php:56
+msgid "General Ledger"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:197
+#: includes/modules/accounting/class-orerp-tax-reports.php:40
+msgid "Tax Reports"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:202
+msgid "Kitchen"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:207
+#: includes/modules/kitchen/class-orerp-recipes.php:46
+msgid "Recipes"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:212
+msgid "Reports"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:217
+msgid "Settings"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:258
+msgid "Module not loaded"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:288
+msgid "Are you sure?"
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:289
+msgid "Operation completed successfully."
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:290
+msgid "An error occurred."
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:291
+msgid "Loading..."
+msgstr ""
+
+#: includes/core/class-orerp-handler.php:292
+msgid "No data found."
+msgstr ""
+
+#: includes/core/class-orerp-helpers.php:266
+msgid "Settings saved."
+msgstr ""
+
+#: includes/core/class-orerp-helpers.php:273
+msgid "Restaurant ERP Settings"
+msgstr ""
+
+#: includes/core/class-orerp-helpers.php:283
+msgid "Currency Symbol"
+msgstr ""
+
+#: includes/core/class-orerp-helpers.php:288
+msgid "Currency Position"
+msgstr ""
+
+#: includes/core/class-orerp-helpers.php:290
+msgid "Left ($100)"
+msgstr ""
+
+#: includes/core/class-orerp-helpers.php:291
+msgid "Right (100$)"
+msgstr ""
+
+#: includes/core/class-orerp-helpers.php:292
+msgid "Left + Space ($ 100)"
+msgstr ""
+
+#: includes/core/class-orerp-helpers.php:293
+msgid "Right + Space (100 $)"
+msgstr ""
+
+#: includes/core/class-orerp-helpers.php:300
+msgid "Date Format"
+msgstr ""
+
+#: includes/core/class-orerp-helpers.php:303
+msgid "e.g. Y-m-d"
+msgstr ""
+
+#: includes/core/class-orerp-helpers.php:304
+msgid "PHP date() format used across reports."
+msgstr ""
+
+#: includes/core/class-orerp-helpers.php:307
+msgid "Default Tax / VAT Rate (%)"
+msgstr ""
+
+#: includes/core/class-orerp-helpers.php:310
+msgid "Used as the default rate when creating purchase orders."
+msgstr ""
+
+#: includes/core/class-orerp-helpers.php:316
+msgid "Save Settings"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:44
+msgid "Chart of Accounts"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:46
+#: includes/modules/accounting/class-orerp-journal-entries.php:50
+#: includes/modules/branches/class-orerp-branches.php:47
+#: includes/modules/employees/class-orerp-employees.php:47
+#: includes/modules/purchases/class-orerp-purchase-orders.php:53
+#: includes/modules/suppliers/class-orerp-suppliers.php:51
+msgid "Add New"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:54
+msgid "Loading accounts..."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:62
+msgid "Trial Balance"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:64
+msgid "Refresh"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:68
+msgid "Click refresh to view current balances."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:85
+msgid "Edit Account"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:85
+msgid "Add New Account"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:90
+#: includes/modules/accounting/class-orerp-journal-entries.php:84
+#: includes/modules/branches/class-orerp-branches.php:79
+#: includes/modules/employees/class-orerp-employees.php:79
+#: includes/modules/kitchen/class-orerp-recipes.php:82
+#: includes/modules/purchases/class-orerp-purchase-orders.php:87
+#: includes/modules/suppliers/class-orerp-suppliers.php:82
+msgid "Back to List"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:102
+msgid "Account Code"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:105
+msgid "e.g. 1000"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:106
+msgid "Unique numeric code"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:109
+msgid "Account Name"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:117
+msgid "Account Type"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:119
+msgid "Asset"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:120
+msgid "Liability"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:121
+#: templates/reports/orerp-financial.php:45
+msgid "Equity"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:122
+#: templates/reports/orerp-financial.php:22
+#: templates/reports/orerp-sales.php:17
+#: templates/reports/orerp-sales.php:26
+msgid "Revenue"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:123
+msgid "Expense"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:127
+msgid "Parent Account"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:129
+msgid "None (Top Level)"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:136
+#: includes/modules/accounting/class-orerp-journal-entries.php:108
+#: includes/modules/accounting/class-orerp-journal-entries.php:119
+#: includes/modules/reports/class-orerp-dashboard-reports.php:403
+msgid "Description"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:143
+#: includes/modules/branches/class-orerp-branches.php:134
+#: includes/modules/employees/class-orerp-employees.php:168
+#: includes/modules/kitchen/class-orerp-recipes.php:127
+#: includes/modules/suppliers/class-orerp-suppliers.php:144
+msgid "Active"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:149
+msgid "Save Account"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:281
+msgid "Code, name, and type are required."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:289
+msgid "Account code already exists."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:303
+msgid "Failed to save account."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:317
+msgid "Cannot delete account with journal entries."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:417
+#: includes/modules/accounting/class-orerp-chart-accounts.php:436
+#: includes/modules/accounting/class-orerp-chart-accounts.php:451
+#: includes/modules/accounting/class-orerp-chart-accounts.php:468
+#: includes/modules/accounting/class-orerp-journal-entries.php:517
+#: includes/modules/accounting/class-orerp-journal-entries.php:534
+#: includes/modules/accounting/class-orerp-journal-entries.php:549
+#: includes/modules/accounting/class-orerp-journal-entries.php:566
+#: includes/modules/accounting/class-orerp-journal-entries.php:583
+#: includes/modules/accounting/class-orerp-journal-entries.php:601
+#: includes/modules/accounting/class-orerp-ledger.php:234
+#: includes/modules/accounting/class-orerp-tax-reports.php:269
+#: includes/modules/branches/class-orerp-branch-transfers.php:251
+#: includes/modules/branches/class-orerp-branch-transfers.php:269
+#: includes/modules/branches/class-orerp-branch-transfers.php:289
+#: includes/modules/branches/class-orerp-branch-transfers.php:309
+#: includes/modules/branches/class-orerp-branches.php:327
+#: includes/modules/branches/class-orerp-branches.php:356
+#: includes/modules/branches/class-orerp-branches.php:373
+#: includes/modules/branches/class-orerp-branches.php:396
+#: includes/modules/branches/class-orerp-branches.php:410
+#: includes/modules/employees/class-orerp-attendance.php:421
+#: includes/modules/employees/class-orerp-attendance.php:441
+#: includes/modules/employees/class-orerp-attendance.php:461
+#: includes/modules/employees/class-orerp-attendance.php:481
+#: includes/modules/employees/class-orerp-attendance.php:498
+#: includes/modules/employees/class-orerp-attendance.php:511
+#: includes/modules/employees/class-orerp-attendance.php:523
+#: includes/modules/employees/class-orerp-attendance.php:540
+#: includes/modules/employees/class-orerp-employees.php:396
+#: includes/modules/employees/class-orerp-employees.php:420
+#: includes/modules/employees/class-orerp-employees.php:437
+#: includes/modules/employees/class-orerp-employees.php:454
+#: includes/modules/employees/class-orerp-employees.php:472
+#: includes/modules/employees/class-orerp-roles.php:237
+#: includes/modules/employees/class-orerp-roles.php:248
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:540
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:559
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:577
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:592
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:607
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:623
+#: includes/modules/kitchen/class-orerp-order-workflow.php:238
+#: includes/modules/kitchen/class-orerp-order-workflow.php:260
+#: includes/modules/kitchen/class-orerp-order-workflow.php:277
+#: includes/modules/kitchen/class-orerp-recipes.php:400
+#: includes/modules/kitchen/class-orerp-recipes.php:417
+#: includes/modules/kitchen/class-orerp-recipes.php:432
+#: includes/modules/kitchen/class-orerp-recipes.php:444
+#: includes/modules/purchases/class-orerp-purchase-orders.php:542
+#: includes/modules/purchases/class-orerp-purchase-orders.php:559
+#: includes/modules/purchases/class-orerp-purchase-orders.php:574
+#: includes/modules/purchases/class-orerp-purchase-orders.php:586
+#: includes/modules/purchases/class-orerp-purchase-orders.php:603
+#: includes/modules/purchases/class-orerp-purchase-orders.php:620
+#: includes/modules/purchases/class-orerp-purchase-orders.php:635
+#: includes/modules/reports/class-orerp-dashboard-reports.php:426
+#: includes/modules/reports/class-orerp-reports.php:372
+#: includes/modules/suppliers/class-orerp-suppliers.php:346
+#: includes/modules/suppliers/class-orerp-suppliers.php:362
+#: includes/modules/suppliers/class-orerp-suppliers.php:377
+#: includes/modules/suppliers/class-orerp-suppliers.php:389
+#: includes/modules/suppliers/class-orerp-suppliers.php:409
+#: includes/modules/suppliers/class-orerp-suppliers.php:420
+#: includes/modules/suppliers/class-orerp-suppliers.php:435
+msgid "Insufficient permissions"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:444
+msgid "Account saved."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-chart-accounts.php:461
+msgid "Account deleted."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:58
+msgid "Loading journal entries..."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:79
+msgid "Edit Journal Entry"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:79
+#: includes/modules/reports/class-orerp-dashboard-reports.php:109
+msgid "New Journal Entry"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:96
+msgid "Entry Number"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:101
+#: includes/modules/reports/class-orerp-dashboard-reports.php:348
+#: includes/modules/reports/class-orerp-dashboard-reports.php:402
+msgid "Date"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:112
+msgid "Journal Lines"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:113
+msgid "Total Debit must equal Total Credit."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:118
+#: includes/modules/accounting/class-orerp-ledger.php:72
+#: templates/reports/orerp-financial.php:25
+msgid "Account"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:120
+#: templates/reports/orerp-financial.php:25
+#: templates/reports/orerp-financial.php:43
+msgid "Debit"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:121
+#: templates/reports/orerp-financial.php:25
+#: templates/reports/orerp-financial.php:43
+msgid "Credit"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:146
+msgid "+ Add Line"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:148
+msgid "Debit:"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:149
+msgid "Credit:"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:154
+msgid "Out of Balance"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:163
+msgid "Save Entry"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:168
+msgid "Post Entry"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:318
+msgid "Description and lines are required."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:330
+#: includes/modules/accounting/class-orerp-journal-entries.php:408
+msgid "Total debit must equal total credit."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:347
+msgid "Failed to create journal entry."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:389
+msgid "Date and description are required."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:395
+msgid "Cannot edit posted entries."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:465
+#: includes/modules/accounting/class-orerp-journal-entries.php:590
+msgid "Entry not found."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:469
+msgid "Entry is already posted."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:474
+msgid "Cannot post unbalanced entry."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:489
+msgid "Cannot delete posted entries."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:542
+msgid "Journal entry saved."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:559
+msgid "Entry deleted."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-journal-entries.php:576
+msgid "Entry posted."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-ledger.php:62
+#: includes/modules/accounting/class-orerp-tax-reports.php:49
+#: includes/modules/employees/class-orerp-attendance.php:90
+#: includes/modules/reports/class-orerp-reports.php:71
+msgid "From"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-ledger.php:67
+#: includes/modules/accounting/class-orerp-tax-reports.php:54
+#: includes/modules/employees/class-orerp-attendance.php:94
+#: includes/modules/reports/class-orerp-reports.php:76
+msgid "To"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-ledger.php:74
+msgid "All Accounts"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-ledger.php:82
+msgid "Load Ledger"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-ledger.php:88
+msgid "Select a date range and click \"Load Ledger\"."
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-tax-reports.php:42
+#: includes/modules/reports/class-orerp-reports.php:41
+#: templates/reports/orerp-header.php:51
+msgid "Print / PDF"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-tax-reports.php:60
+msgid "Generate Tax Summary"
+msgstr ""
+
+#: includes/modules/accounting/class-orerp-tax-reports.php:66
+msgid "Select a period and click \"Generate Tax Summary\"."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branch-transfers.php:142
+msgid "Please select both branches."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branch-transfers.php:146
+msgid "Source and destination branches cannot be the same."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branch-transfers.php:150
+msgid "Please add at least one item."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branch-transfers.php:164
+msgid "Failed to create transfer."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branch-transfers.php:189
+#: includes/modules/branches/class-orerp-branch-transfers.php:230
+msgid "Transfer not found."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branch-transfers.php:193
+msgid "Transfer cannot be received in current status."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branch-transfers.php:234
+msgid "Cannot cancel transfer in current status."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branch-transfers.php:280
+msgid "Transfer created successfully."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branch-transfers.php:301
+msgid "Transfer received successfully."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branch-transfers.php:320
+msgid "Transfer cancelled."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:55
+msgid "Loading branches..."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:74
+msgid "Edit Branch"
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:74
+msgid "Add New Branch"
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:91
+msgid "Branch Name"
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:97
+msgid "Branch Code"
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:100
+msgid "e.g. BR-001"
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:105
+#: includes/modules/suppliers/class-orerp-suppliers.php:137
+msgid "Address"
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:111
+#: includes/modules/employees/class-orerp-employees.php:112
+#: includes/modules/suppliers/class-orerp-suppliers.php:112
+msgid "Phone"
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:117
+#: includes/modules/employees/class-orerp-employees.php:106
+#: includes/modules/suppliers/class-orerp-suppliers.php:120
+msgid "Email"
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:124
+msgid "Manager"
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:126
+msgid "Select Manager"
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:140
+msgid "Save Branch"
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:259
+msgid "Branch name and code are required."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:269
+msgid "Branch code already exists."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:292
+msgid "Failed to save branch."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:310
+msgid "Cannot delete branch with stock items."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:365
+msgid "Branch saved successfully."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:379
+msgid "Invalid branch ID."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:388
+msgid "Branch deleted successfully."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:402
+msgid "Branch switched."
+msgstr ""
+
+#: includes/modules/branches/class-orerp-branches.php:417
+msgid "Branch not found."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:67
+msgid "Attendance Log"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:72
+#: templates/reports/orerp-employees.php:20
+msgid "Employee"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:74
+msgid "All Employees"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:81
+#: includes/modules/employees/class-orerp-attendance.php:116
+#: includes/modules/employees/class-orerp-employees.php:120
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:80
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:160
+#: includes/modules/purchases/class-orerp-purchase-orders.php:104
+#: includes/modules/reports/class-orerp-reports.php:81
+#: templates/orerp-kds-display.php:53
+#: templates/reports/orerp-branches.php:20
+#: templates/reports/orerp-employees.php:21
+#: templates/reports/orerp-inventory.php:26
+msgid "Branch"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:83
+#: includes/modules/employees/class-orerp-attendance.php:118
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:82
+#: includes/modules/reports/class-orerp-dashboard-reports.php:158
+#: includes/modules/reports/class-orerp-reports.php:83
+msgid "All Branches"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:99
+msgid "Load Attendance"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:105
+msgid "Click \"Load Attendance\" to view records."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:111
+msgid "Shifts"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:126
+msgid "Load Shifts"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:132
+msgid "Click \"Load Shifts\" to view available shifts."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:152
+msgid "Employee is already clocked in."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:178
+msgid "Employee is not clocked in."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:286
+msgid "Employee, branch, and clock-in time are required."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:306
+msgid "Failed to save attendance."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:383
+msgid "Branch, name, start and end time are required."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:403
+msgid "Failed to save shift."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:433
+msgid "Clocked in successfully."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:453
+msgid "Clocked out successfully."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:490
+msgid "Attendance saved."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:503
+msgid "Attendance deleted."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:532
+msgid "Shift saved."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-attendance.php:545
+msgid "Shift deleted."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:55
+#: includes/modules/employees/class-orerp-roles.php:97
+msgid "Loading employees..."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:73
+msgid "Edit Employee"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:73
+msgid "Add New Employee"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:91
+msgid "Employee Code"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:94
+msgid "Auto-generated"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:98
+msgid "Full Name"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:122
+#: includes/modules/purchases/class-orerp-purchase-orders.php:106
+msgid "Select Branch"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:133
+msgid "Position"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:136
+msgid "e.g. Chef, Waiter, Manager"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:142
+msgid "Hourly Rate"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:148
+msgid "Hire Date"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:156
+msgid "WordPress User"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:158
+msgid "None"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:161
+msgid "Link to WP user for login access"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:173
+msgid "Emergency Contact"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:176
+msgid "Contact Name"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:182
+msgid "Contact Phone"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:190
+msgid "Save Employee"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:334
+msgid "Employee code, name, and branch are required."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:344
+msgid "Employee code already exists."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:369
+msgid "Failed to save employee."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:429
+msgid "Employee saved successfully."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:442
+msgid "Invalid employee ID."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:446
+msgid "Employee deleted successfully."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-employees.php:461
+msgid "Employee not found."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-roles.php:27
+msgid "Full ERP administration"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-roles.php:28
+msgid "Kitchen & attendance access"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-roles.php:29
+msgid "View reports & dashboard"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-roles.php:44
+msgid "Restaurant Manager"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-roles.php:50
+msgid "Kitchen Staff"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-roles.php:59
+msgid "Cashier"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-roles.php:92
+msgid "Assigned Roles"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-roles.php:104
+msgid "Available Roles & Capabilities"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-roles.php:109
+msgid "Role"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-roles.php:110
+msgid "Capabilities"
+msgstr ""
+
+#: includes/modules/employees/class-orerp-roles.php:200
+msgid "Invalid user."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-roles.php:216
+msgid "Invalid role."
+msgstr ""
+
+#: includes/modules/employees/class-orerp-roles.php:260
+msgid "Role updated."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:43
+msgid "You do not have permission to view the kitchen display."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:72
+#: includes/modules/reports/class-orerp-dashboard-reports.php:105
+msgid "Kitchen Display"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:74
+msgid "New Order"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:87
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:169
+msgid "Station"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:89
+msgid "All Stations"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:90
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:171
+msgid "Grill"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:91
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:172
+msgid "Fry"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:92
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:173
+msgid "Salad/Prep"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:93
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:174
+msgid "Dessert"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:94
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:175
+msgid "Drinks"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:98
+#: includes/modules/reports/class-orerp-dashboard-reports.php:347
+#: includes/modules/reports/class-orerp-dashboard-reports.php:404
+#: templates/reports/orerp-sales.php:43
+msgid "Status"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:100
+#: templates/orerp-kds-display.php:55
+msgid "All"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:101
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:111
+#: templates/orerp-kds-display.php:63
+msgid "Pending"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:102
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:115
+#: templates/orerp-kds-display.php:64
+msgid "Preparing"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:103
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:119
+#: templates/orerp-kds-display.php:65
+msgid "Ready"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:123
+msgid "Completed (Today)"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:131
+#: templates/orerp-kds-display.php:69
+msgid "Loading orders..."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:143
+msgid "New Kitchen Order"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:145
+msgid "Back to KDS"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:156
+msgid "WooCommerce Order ID"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:179
+msgid "Priority"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:181
+msgid "Normal"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:182
+msgid "High"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:183
+msgid "Urgent (VIP/Rush)"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:190
+msgid "Estimated Time (minutes)"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:196
+#: includes/modules/kitchen/class-orerp-recipes.php:145
+#: includes/modules/purchases/class-orerp-purchase-orders.php:208
+msgid "Notes"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:202
+msgid "Create Kitchen Order"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:407
+#: includes/modules/kitchen/class-orerp-order-workflow.php:55
+msgid "Order ID and Branch are required."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:422
+#: includes/modules/kitchen/class-orerp-order-workflow.php:98
+msgid "Failed to create kitchen order."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:431
+#: includes/modules/kitchen/class-orerp-order-workflow.php:169
+msgid "Invalid status."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:436
+msgid "Order not found."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:464
+msgid "Kitchen order ID is required."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:477
+msgid "Failed to add prep tracking."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:486
+msgid "Prep record not found."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:570
+msgid "Order status updated."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:585
+#: includes/modules/kitchen/class-orerp-order-workflow.php:252
+msgid "Kitchen order created."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:600
+msgid "Prep tracking started."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-kitchen-display.php:616
+msgid "Prep completed."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-order-workflow.php:66
+msgid "A kitchen order already exists for this order."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-order-workflow.php:178
+msgid "Item not found."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-order-workflow.php:266
+msgid "Kitchen order not found."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-order-workflow.php:289
+msgid "Item updated."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:48
+#: includes/modules/kitchen/class-orerp-recipes.php:77
+msgid "Add New Recipe"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:56
+msgid "Loading recipes..."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:77
+msgid "Edit Recipe"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:94
+msgid "Recipe Name"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:99
+msgid "Linked Product"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:101
+msgid "Select Product"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:104
+msgid "WooCommerce product this recipe produces"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:110
+msgid "Servings"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:115
+msgid "Prep Time (min)"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:120
+msgid "Cook Time (min)"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:133
+msgid "Instructions"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:138
+msgid "Ingredients"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:142
+msgid "Product/Ingredient"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:143
+#: includes/modules/purchases/class-orerp-purchase-orders.php:159
+msgid "Quantity"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:144
+msgid "Unit"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:146
+msgid "Actions"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:155
+#: includes/modules/suppliers/class-orerp-suppliers.php:127
+msgid "Select"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:160
+msgid "g, kg, ml, L..."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:162
+msgid "Remove"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:170
+msgid "+ Add Ingredient"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:176
+msgid "Save Recipe"
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:330
+msgid "Recipe name and product are required."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:425
+msgid "Recipe saved."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:437
+msgid "Recipe deleted."
+msgstr ""
+
+#: includes/modules/kitchen/class-orerp-recipes.php:451
+msgid "Recipe not found."
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:51
+msgid "Purchase Orders"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:61
+msgid "Loading purchase orders..."
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:82
+msgid "Edit Purchase Order"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:82
+msgid "New Purchase Order"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:99
+#: includes/modules/reports/class-orerp-dashboard-reports.php:344
+msgid "PO Number"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:128
+#: includes/modules/reports/class-orerp-dashboard-reports.php:345
+msgid "Supplier"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:130
+msgid "Select Supplier"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:148
+msgid "Expected Date"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:154
+msgid "Items"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:158
+#: templates/reports/orerp-inventory.php:26
+msgid "Product"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:160
+msgid "Unit Cost"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:161
+#: includes/modules/reports/class-orerp-dashboard-reports.php:346
+#: templates/reports/orerp-branches.php:47
+#: templates/reports/orerp-financial.php:36
+#: templates/reports/orerp-sales.php:43
+msgid "Total"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:186
+msgid "+ Add Item"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:190
+msgid "Subtotal:"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:195
+msgid "Tax:"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:200
+msgid "Total:"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:214
+msgid "Save Purchase Order"
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:340
+msgid "Supplier and branch are required."
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:380
+msgid "Failed to save purchase order."
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:411
+#: includes/modules/purchases/class-orerp-purchase-orders.php:592
+msgid "Purchase order not found."
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:415
+msgid "Cannot receive in current status."
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:476
+msgid "Purchase and amount are required."
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:567
+msgid "Purchase order saved."
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:579
+msgid "Purchase order deleted."
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:613
+msgid "Purchase order received successfully."
+msgstr ""
+
+#: includes/modules/purchases/class-orerp-purchase-orders.php:628
+msgid "Payment recorded."
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:27
+msgid "Restaurant ERP Dashboard"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:33
+msgid "Current Branch:"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:41
+msgid "Total Branches"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:46
+msgid "Active Employees"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:51
+msgid "Active Suppliers"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:56
+msgid "Pending Purchases"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:61
+#: templates/reports/orerp-branches.php:24
+msgid "Kitchen Orders"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:66
+msgid "This Month Revenue"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:71
+msgid "This Month Expenses"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:76
+msgid "Net Profit"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:84
+msgid "Quick Actions"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:89
+msgid "Add Branch"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:93
+msgid "Add Employee"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:97
+msgid "Add Supplier"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:101
+msgid "Create Purchase Order"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:117
+msgid "Recent Purchase Orders"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:119
+#: includes/modules/reports/class-orerp-dashboard-reports.php:131
+msgid "View All"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:129
+msgid "Recent Journal Entries"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:338
+msgid "No purchase orders yet."
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:395
+msgid "No journal entries yet."
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:401
+msgid "Entry #"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:413
+msgid "Posted"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-dashboard-reports.php:413
+msgid "Draft"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-reports.php:39
+msgid "Reports & Analytics"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-reports.php:48
+msgid "Sales"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-reports.php:52
+msgid "Inventory"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-reports.php:56
+msgid "Financial"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-reports.php:60
+msgid "Branch Comparison"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-reports.php:64
+msgid "Employee Performance"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-reports.php:90
+msgid "Generate Report"
+msgstr ""
+
+#: includes/modules/reports/class-orerp-reports.php:96
+msgid "Click \"Generate Report\" to load data."
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:59
+msgid "Loading suppliers..."
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:77
+msgid "Edit Supplier"
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:77
+msgid "Add New Supplier"
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:94
+msgid "Supplier Name"
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:99
+msgid "Supplier Code"
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:107
+msgid "Contact Person"
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:125
+msgid "Payment Terms"
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:128
+msgid "Cash on Delivery"
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:129
+msgid "Net 15 Days"
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:130
+msgid "Net 30 Days"
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:131
+msgid "Net 60 Days"
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:150
+msgid "Save Supplier"
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:240
+msgid "Supplier name and code are required."
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:248
+msgid "Supplier code already exists."
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:262
+msgid "Failed to save supplier."
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:308
+msgid "Supplier and product are required."
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:331
+msgid "Failed to save product."
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:370
+msgid "Supplier saved."
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:382
+msgid "Supplier deleted."
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:428
+msgid "Product saved."
+msgstr ""
+
+#: includes/modules/suppliers/class-orerp-suppliers.php:440
+msgid "Product deleted."
+msgstr ""
+
+#: templates/reports/orerp-branches.php:13
+msgid "Branch Comparison Report"
+msgstr ""
+
+#: templates/reports/orerp-branches.php:22
+msgid "PO Count"
+msgstr ""
+
+#: templates/reports/orerp-branches.php:23
+msgid "PO Total"
+msgstr ""
+
+#: templates/reports/orerp-branches.php:25
+msgid "Stock Items"
+msgstr ""
+
+#: templates/reports/orerp-branches.php:57
+msgid "No branch data available."
+msgstr ""
+
+#: templates/reports/orerp-employees.php:13
+msgid "Employee Performance Report"
+msgstr ""
+
+#: templates/reports/orerp-employees.php:22
+msgid "Days Worked"
+msgstr ""
+
+#: templates/reports/orerp-employees.php:23
+msgid "Total Hours"
+msgstr ""
+
+#: templates/reports/orerp-employees.php:24
+msgid "Tasks Completed"
+msgstr ""
+
+#: templates/reports/orerp-employees.php:25
+msgid "Avg Time (min)"
+msgstr ""
+
+#: templates/reports/orerp-employees.php:41
+msgid "No employee data available."
+msgstr ""
+
+#: templates/reports/orerp-financial.php:13
+msgid "Financial Report"
+msgstr ""
+
+#: templates/reports/orerp-financial.php:17
+msgid "Total Revenue"
+msgstr ""
+
+#: templates/reports/orerp-financial.php:18
+msgid "Total Expenses"
+msgstr ""
+
+#: templates/reports/orerp-financial.php:19
+msgid "Net Income"
+msgstr ""
+
+#: templates/reports/orerp-financial.php:22
+msgid "Expenses"
+msgstr ""
+
+#: templates/reports/orerp-financial.php:25
+msgid "Code"
+msgstr ""
+
+#: templates/reports/orerp-financial.php:25
+msgid "Net"
+msgstr ""
+
+#: templates/reports/orerp-financial.php:41
+msgid "Balance Sheet Summary"
+msgstr ""
+
+#: templates/reports/orerp-financial.php:43
+msgid "Category"
+msgstr ""
+
+#: templates/reports/orerp-financial.php:45
+msgid "Assets"
+msgstr ""
+
+#: templates/reports/orerp-financial.php:45
+msgid "Liabilities"
+msgstr ""
+
+#: templates/reports/orerp-footer.php:15
+msgid "Generated"
+msgstr ""
+
+#: templates/reports/orerp-header.php:48
+msgid "As of"
+msgstr ""
+
+#: templates/reports/orerp-inventory.php:13
+msgid "Inventory Report"
+msgstr ""
+
+#: templates/reports/orerp-inventory.php:17
+msgid "Total Items"
+msgstr ""
+
+#: templates/reports/orerp-inventory.php:18
+msgid "Total Value"
+msgstr ""
+
+#: templates/reports/orerp-inventory.php:19
+msgid "Low Stock"
+msgstr ""
+
+#: templates/reports/orerp-inventory.php:20
+msgid "Out of Stock"
+msgstr ""
+
+#: templates/reports/orerp-inventory.php:24
+msgid "Stock List"
+msgstr ""
+
+#: templates/reports/orerp-inventory.php:26
+msgid "Qty"
+msgstr ""
+
+#: templates/reports/orerp-inventory.php:26
+msgid "Min"
+msgstr ""
+
+#: templates/reports/orerp-inventory.php:26
+msgid "Value"
+msgstr ""
+
+#: templates/reports/orerp-sales.php:13
+msgid "Sales Report"
+msgstr ""
+
+#: templates/reports/orerp-sales.php:18
+#: templates/reports/orerp-sales.php:26
+msgid "COGS"
+msgstr ""
+
+#: templates/reports/orerp-sales.php:19
+#: templates/reports/orerp-sales.php:26
+msgid "Gross Profit"
+msgstr ""
+
+#: templates/reports/orerp-sales.php:20
+msgid "Margin"
+msgstr ""
+
+#: templates/reports/orerp-sales.php:24
+msgid "Monthly Trend"
+msgstr ""
+
+#: templates/reports/orerp-sales.php:26
+msgid "Month"
+msgstr ""
+
+#: templates/reports/orerp-sales.php:41
+msgid "Purchase Summary"
+msgstr ""
+
+#: templates/reports/orerp-sales.php:43
+msgid "Count"
+msgstr ""

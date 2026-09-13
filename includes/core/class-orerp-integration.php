@@ -141,8 +141,9 @@ class Obydullah_ERP_Integration
     {
         $order_id = intval($order_id);
 
-        if (function_exists('get_post_meta')) {
-            $branch_id = intval(get_post_meta($order_id, '_orerp_branch_id', true));
+        $order = wc_get_order($order_id);
+        if ($order) {
+            $branch_id = intval($order->get_meta('_orerp_branch_id', true));
             if ($branch_id > 0) {
                 return $branch_id;
             }
@@ -162,7 +163,7 @@ class Obydullah_ERP_Integration
     {
         global $wpdb;
 
-        $table = $wpdb->prefix . 'erp_journal_entries';
+        $table = $wpdb->prefix . 'orerp_journal_entries';
         $count = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$table} WHERE reference_type = %s AND reference_id = %d",
             $ref_type,

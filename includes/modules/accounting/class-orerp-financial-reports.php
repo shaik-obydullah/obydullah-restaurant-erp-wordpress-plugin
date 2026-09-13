@@ -24,9 +24,9 @@ class Obydullah_ERP_Financial_Reports
     {
         global $wpdb;
 
-        $this->table_accounts = $wpdb->prefix . 'erp_accounts';
-        $this->table_lines    = $wpdb->prefix . 'erp_journal_lines';
-        $this->table_entries  = $wpdb->prefix . 'erp_journal_entries';
+        $this->table_accounts = $wpdb->prefix . 'orerp_accounts';
+        $this->table_lines    = $wpdb->prefix . 'orerp_journal_lines';
+        $this->table_entries  = $wpdb->prefix . 'orerp_journal_entries';
     }
 
     /**
@@ -36,7 +36,7 @@ class Obydullah_ERP_Financial_Reports
      * @param string $to   End date (inclusive).
      * @return array account_id => ['debit'=>float,'credit'=>float]
      */
-    private function orerp_get_posted_totals($from = 'orerp_', $to = 'orerp_')
+    private function orerp_get_posted_totals($from = '', $to = '')
     {
         global $wpdb;
 
@@ -102,7 +102,7 @@ class Obydullah_ERP_Financial_Reports
      * @param string $to   End date.
      * @return array
      */
-    public function orerp_get_profit_loss($from = 'orerp_', $to = 'orerp_')
+    public function orerp_get_profit_loss($from = '', $to = '')
     {
         global $wpdb;
 
@@ -167,7 +167,7 @@ class Obydullah_ERP_Financial_Reports
      * @param string $to   End date.
      * @return array
      */
-    public function orerp_get_account_breakdown($from = 'orerp_', $to = 'orerp_')
+    public function orerp_get_account_breakdown($from = '', $to = '')
     {
         global $wpdb;
 
@@ -208,13 +208,13 @@ class Obydullah_ERP_Financial_Reports
      * @param string $as_of Balances are accumulated up to and including this date.
      * @return array
      */
-    public function orerp_get_balance_sheet($as_of = 'orerp_')
+    public function orerp_get_balance_sheet($as_of = '')
     {
         global $wpdb;
 
         $as_of = Obydullah_ERP_Helpers::orerp_is_valid_date($as_of) ? $as_of : gmdate('Y-m-d');
 
-        $totals = $this->orerp_get_posted_totals('orerp_', $as_of);
+        $totals = $this->orerp_get_posted_totals('', $as_of);
 
         $result = [];
 

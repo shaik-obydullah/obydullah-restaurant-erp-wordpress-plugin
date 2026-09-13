@@ -18,7 +18,7 @@ class Obydullah_ERP_Chart_Accounts
     public function __construct()
     {
         global $wpdb;
-        $this->table = $wpdb->prefix . 'erp_accounts';
+        $this->table = $wpdb->prefix . 'orerp_accounts';
 
         add_action('wp_ajax_orerp_get_accounts', [$this, 'orerp_ajax_get_accounts']);
         add_action('wp_ajax_orerp_save_account', [$this, 'orerp_ajax_save_account']);
@@ -95,20 +95,20 @@ class Obydullah_ERP_Chart_Accounts
                 <form id="account-form" method="post">
                     <input type="hidden" name="action" value="orerp_save_account">
                     <?php wp_nonce_field('orerp_save_account', 'account_nonce'); ?>
-                    <input type="hidden" name="account_id" value="<?php echo esc_attr($account->id ?? 'orerp_'); ?>">
+                    <input type="hidden" name="account_id" value="<?php echo esc_attr($account->id ?? ''); ?>">
 
                     <div class="form-row">
                         <div class="form-group">
                             <label><?php esc_html_e('Account Code', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
                             <input type="text" name="code" class="regular-text" required
-                                value="<?php echo esc_attr($account->code ?? 'orerp_'); ?>"
+                                value="<?php echo esc_attr($account->code ?? ''); ?>"
                                 placeholder="<?php esc_attr_e('e.g. 1000', 'obydullah-restaurant-erp'); ?>">
                             <p class="description"><?php esc_html_e('Unique numeric code', 'obydullah-restaurant-erp'); ?></p>
                         </div>
                         <div class="form-group">
                             <label><?php esc_html_e('Account Name', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
                             <input type="text" name="name" class="regular-text" required
-                                value="<?php echo esc_attr($account->name ?? 'orerp_'); ?>">
+                                value="<?php echo esc_attr($account->name ?? ''); ?>">
                         </div>
                     </div>
 
@@ -116,11 +116,11 @@ class Obydullah_ERP_Chart_Accounts
                         <div class="form-group">
                             <label><?php esc_html_e('Account Type', 'obydullah-restaurant-erp'); ?> <span class="required">*</span></label>
                             <select name="type" class="regular-text" required>
-                                <option value="asset" <?php selected($account->type ?? 'orerp_', 'asset'); ?>><?php esc_html_e('Asset', 'obydullah-restaurant-erp'); ?></option>
-                                <option value="liability" <?php selected($account->type ?? 'orerp_', 'liability'); ?>><?php esc_html_e('Liability', 'obydullah-restaurant-erp'); ?></option>
-                                <option value="equity" <?php selected($account->type ?? 'orerp_', 'equity'); ?>><?php esc_html_e('Equity', 'obydullah-restaurant-erp'); ?></option>
-                                <option value="revenue" <?php selected($account->type ?? 'orerp_', 'revenue'); ?>><?php esc_html_e('Revenue', 'obydullah-restaurant-erp'); ?></option>
-                                <option value="expense" <?php selected($account->type ?? 'orerp_', 'expense'); ?>><?php esc_html_e('Expense', 'obydullah-restaurant-erp'); ?></option>
+                                <option value="asset" <?php selected($account->type ?? '', 'asset'); ?>><?php esc_html_e('Asset', 'obydullah-restaurant-erp'); ?></option>
+                                <option value="liability" <?php selected($account->type ?? '', 'liability'); ?>><?php esc_html_e('Liability', 'obydullah-restaurant-erp'); ?></option>
+                                <option value="equity" <?php selected($account->type ?? '', 'equity'); ?>><?php esc_html_e('Equity', 'obydullah-restaurant-erp'); ?></option>
+                                <option value="revenue" <?php selected($account->type ?? '', 'revenue'); ?>><?php esc_html_e('Revenue', 'obydullah-restaurant-erp'); ?></option>
+                                <option value="expense" <?php selected($account->type ?? '', 'expense'); ?>><?php esc_html_e('Expense', 'obydullah-restaurant-erp'); ?></option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -134,7 +134,7 @@ class Obydullah_ERP_Chart_Accounts
 
                     <div class="form-group">
                         <label><?php esc_html_e('Description', 'obydullah-restaurant-erp'); ?></label>
-                        <textarea name="description" rows="3" class="large-text"><?php echo esc_textarea($account->description ?? 'orerp_'); ?></textarea>
+                        <textarea name="description" rows="3" class="large-text"><?php echo esc_textarea($account->description ?? ''); ?></textarea>
                     </div>
 
                     <div class="form-group">
@@ -147,7 +147,7 @@ class Obydullah_ERP_Chart_Accounts
                     <p class="submit">
                         <button type="submit" id="submit-account" class="button button-primary">
                             <span class="btn-text"><?php esc_html_e('Save Account', 'obydullah-restaurant-erp'); ?></span>
-                            <span class="spinner" style="display:none;"></span>
+                            <span class="spinner orerp-block-hidden"></span>
                         </button>
                     </p>
                 </form>
@@ -185,7 +185,7 @@ class Obydullah_ERP_Chart_Accounts
     {
         global $wpdb;
 
-        $defaults = ['per_page' => 0, 'type' => 'orerp_', 'active' => 'orerp_', 'orderby' => 'code', 'order' => 'ASC'];
+        $defaults = ['per_page' => 0, 'type' => '', 'active' => '', 'orderby' => 'code', 'order' => 'ASC'];
         $args = wp_parse_args($args, $defaults);
 
         $where = '1=1';
@@ -196,7 +196,7 @@ class Obydullah_ERP_Chart_Accounts
             $prepare_args[] = $args['type'];
         }
 
-        if ($args['active'] !== 'orerp_') {
+        if ($args['active'] !== '') {
             $where .= ' AND is_active = %d';
             $prepare_args[] = intval($args['active']);
         }
@@ -270,11 +270,11 @@ class Obydullah_ERP_Chart_Accounts
         global $wpdb;
 
         $id = intval($data['account_id'] ?? 0);
-        $code = sanitize_text_field($data['code'] ?? 'orerp_');
-        $name = sanitize_text_field($data['name'] ?? 'orerp_');
-        $type = sanitize_text_field($data['type'] ?? 'orerp_');
+        $code = sanitize_text_field($data['code'] ?? '');
+        $name = sanitize_text_field($data['name'] ?? '');
+        $type = sanitize_text_field($data['type'] ?? '');
         $parent_id = intval($data['parent_id'] ?? 0);
-        $description = sanitize_textarea_field($data['description'] ?? 'orerp_');
+        $description = sanitize_textarea_field($data['description'] ?? '');
         $is_active = isset($data['is_active']) ? 1 : 0;
 
         if (empty($code) || empty($name) || empty($type)) {
@@ -292,9 +292,9 @@ class Obydullah_ERP_Chart_Accounts
         $save_data = compact('code', 'name', 'type', 'parent_id', 'description', 'is_active');
 
         if ($id > 0) {
-            $result = $wpdb->update($this->table, $save_data, ['id' => $id]);
+            $result = $wpdb->update($this->table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
         } else {
-            $result = $wpdb->insert($this->table, $save_data);
+            $result = $wpdb->insert($this->table, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
             $id = $wpdb->insert_id;
         }
 
@@ -307,7 +307,7 @@ class Obydullah_ERP_Chart_Accounts
     {
         global $wpdb;
 
-        $lines_table = $wpdb->prefix . 'erp_journal_lines';
+        $lines_table = $wpdb->prefix . 'orerp_journal_lines';
         $has_entries = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$lines_table} WHERE account_id = %d",
             intval($id)
@@ -317,7 +317,7 @@ class Obydullah_ERP_Chart_Accounts
             return new WP_Error('has_entries', __('Cannot delete account with journal entries.', 'obydullah-restaurant-erp'));
         }
 
-        $wpdb->delete($this->table, ['id' => intval($id)]);
+        $wpdb->delete($this->table, ['id' => intval($id)],['%d']);
         Obydullah_ERP_Cache::invalidate($this->table);
         return true;
     }
@@ -326,7 +326,7 @@ class Obydullah_ERP_Chart_Accounts
     {
         global $wpdb;
         $account_id = intval($account_id);
-        $lines_table = $wpdb->prefix . 'erp_journal_lines';
+        $lines_table = $wpdb->prefix . 'orerp_journal_lines';
         $cache_key = 'account_balance_' . $account_id;
         $cached = Obydullah_ERP_Cache::get($cache_key, $lines_table);
         if (false !== $cached) {
@@ -334,8 +334,8 @@ class Obydullah_ERP_Chart_Accounts
         }
         $result = $wpdb->get_row($wpdb->prepare(
             "SELECT COALESCE(SUM(jl.debit), 0) as total_debit, COALESCE(SUM(jl.credit), 0) as total_credit
-            FROM {$wpdb->prefix}erp_journal_lines jl
-            JOIN {$wpdb->prefix}erp_journal_entries je ON jl.entry_id = je.id
+            FROM {$wpdb->prefix}orerp_journal_lines jl
+            JOIN {$wpdb->prefix}orerp_journal_entries je ON jl.entry_id = je.id
             WHERE jl.account_id = %d AND je.is_posted = 1",
             $account_id
         ));
@@ -417,7 +417,7 @@ class Obydullah_ERP_Chart_Accounts
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $accounts = $this->orerp_get_accounts(['active' => isset($_GET['all']) ? 'orerp_' : 1]);
+        $accounts = $this->orerp_get_accounts(['active' => isset($_GET['all']) ? '' : 1]);
 
         $helpers = new Obydullah_ERP_Helpers();
         foreach ($accounts as &$acc) {
@@ -436,7 +436,7 @@ class Obydullah_ERP_Chart_Accounts
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_account($_POST);
+        $result = $this->orerp_save_account(wp_unslash($_POST));
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }

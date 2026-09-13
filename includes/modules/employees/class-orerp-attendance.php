@@ -20,9 +20,9 @@ class Obydullah_ERP_Attendance
     public function __construct()
     {
         global $wpdb;
-        $this->attendance_table = $wpdb->prefix . 'erp_attendance';
-        $this->shifts_table = $wpdb->prefix . 'erp_shifts';
-        $this->employees_table = $wpdb->prefix . 'erp_employees';
+        $this->attendance_table = $wpdb->prefix . 'orerp_attendance';
+        $this->shifts_table = $wpdb->prefix . 'orerp_shifts';
+        $this->employees_table = $wpdb->prefix . 'orerp_employees';
 
         add_action('wp_ajax_orerp_clock_in', [$this, 'orerp_ajax_clock_in']);
         add_action('wp_ajax_orerp_clock_out', [$this, 'orerp_ajax_clock_out']);
@@ -48,7 +48,7 @@ class Obydullah_ERP_Attendance
             Obydullah_ERP_Cache::set($emp_cache_key, $this->employees_table, $employees);
         }
 
-        $branch_table = $wpdb->prefix . 'erp_branches';
+        $branch_table = $wpdb->prefix . 'orerp_branches';
         $branch_cache_key = 'branches_active_simple';
         $branch_cached = Obydullah_ERP_Cache::get($branch_cache_key, $branch_table);
         if (false !== $branch_cached) {
@@ -67,7 +67,7 @@ class Obydullah_ERP_Attendance
                     <h2><?php esc_html_e('Attendance Log', 'obydullah-restaurant-erp'); ?></h2>
                 </div>
 
-                <div class="orerp-filters" style="margin-bottom:15px;">
+                <div class="orerp-filters orerp-filters-compact">
                     <div class="filter-group">
                         <label><?php esc_html_e('Employee', 'obydullah-restaurant-erp'); ?></label>
                         <select id="attendance-employee-filter">
@@ -111,7 +111,7 @@ class Obydullah_ERP_Attendance
                     <h2><?php esc_html_e('Shifts', 'obydullah-restaurant-erp'); ?></h2>
                 </div>
 
-                <div class="orerp-filters" style="margin-bottom:15px;">
+                <div class="orerp-filters orerp-filters-compact">
                     <div class="filter-group">
                         <label><?php esc_html_e('Branch', 'obydullah-restaurant-erp'); ?></label>
                         <select id="shift-branch-filter">
@@ -155,15 +155,15 @@ class Obydullah_ERP_Attendance
         $wpdb->insert($this->attendance_table, [
             'employee_id' => $employee_id,
             'branch_id'   => $branch_id,
-            'orerp_clock_in'    => current_time('mysql'),
-        ]);
+            'clock_in'    => current_time('mysql'),
+        ],['%s', '%s', '%s']);
 
         Obydullah_ERP_Cache::invalidate($this->attendance_table);
 
         return $wpdb->insert_id;
     }
 
-    public function orerp_clock_out($employee_id, $notes = 'orerp_')
+    public function orerp_clock_out($employee_id, $notes = '')
     {
         global $wpdb;
 
@@ -179,9 +179,9 @@ class Obydullah_ERP_Attendance
         }
 
         $wpdb->update($this->attendance_table, [
-            'orerp_clock_out' => current_time('mysql'),
+            'clock_out' => current_time('mysql'),
             'notes'     => $notes,
-        ], ['id' => $record->id]);
+        ], ['id' => $record->id],['%s', '%s'], ['%s']);
 
         Obydullah_ERP_Cache::invalidate($this->attendance_table);
 
@@ -197,8 +197,8 @@ class Obydullah_ERP_Attendance
             'page'       => 1,
             'employee_id' => 0,
             'branch_id'  => 0,
-            'date_from'  => 'orerp_',
-            'date_to'    => 'orerp_',
+            'date_from'  => '',
+            'date_to'    => '',
         ];
 
         $args = wp_parse_args($args, $defaults);
@@ -244,7 +244,7 @@ class Obydullah_ERP_Attendance
             "SELECT a.*, e.employee_code, e.position, b.name as branch_name
             FROM {$this->attendance_table} a
             LEFT JOIN {$this->employees_table} e ON a.employee_id = e.id
-            LEFT JOIN {$wpdb->prefix}erp_branches b ON a.branch_id = b.id
+            LEFT JOIN {$wpdb->prefix}orerp_branches b ON a.branch_id = b.id
             WHERE {$where}
             ORDER BY a.clock_in DESC
             LIMIT %d OFFSET %d",
@@ -278,9 +278,9 @@ class Obydullah_ERP_Attendance
         $id = intval($data['attendance_id'] ?? 0);
         $employee_id = intval($data['employee_id'] ?? 0);
         $branch_id = intval($data['branch_id'] ?? 0);
-        $clock_in = sanitize_text_field($data['orerp_clock_in'] ?? 'orerp_');
-        $clock_out = sanitize_text_field($data['orerp_clock_out'] ?? 'orerp_');
-        $notes = sanitize_textarea_field($data['notes'] ?? 'orerp_');
+        $clock_in = sanitize_text_field($data['clock_in'] ?? '');
+        $clock_out = sanitize_text_field($data['clock_out'] ?? '');
+        $notes = sanitize_textarea_field($data['notes'] ?? '');
 
         if (!$employee_id || !$branch_id || empty($clock_in)) {
             return new WP_Error('missing_fields', __('Employee, branch, and clock-in time are required.', 'obydullah-restaurant-erp'));
@@ -289,15 +289,15 @@ class Obydullah_ERP_Attendance
         $save_data = [
             'employee_id' => $employee_id,
             'branch_id'   => $branch_id,
-            'orerp_clock_in'    => $clock_in,
-            'orerp_clock_out'   => $clock_out ?: null,
+            'clock_in'    => $clock_in,
+            'clock_out'   => $clock_out ?: null,
             'notes'       => $notes,
         ];
 
         if ($id > 0) {
-            $result = $wpdb->update($this->attendance_table, $save_data, ['id' => $id]);
+            $result = $wpdb->update($this->attendance_table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
         } else {
-            $result = $wpdb->insert($this->attendance_table, $save_data);
+            $result = $wpdb->insert($this->attendance_table, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
             $id = $wpdb->insert_id;
         }
 
@@ -309,7 +309,7 @@ class Obydullah_ERP_Attendance
     public function orerp_delete_attendance($id)
     {
         global $wpdb;
-        $result = $wpdb->delete($this->attendance_table, ['id' => intval($id)]) !== false;
+        $result = $wpdb->delete($this->attendance_table, ['id' => intval($id)],['%d']) !== false;
         Obydullah_ERP_Cache::invalidate($this->attendance_table);
         return $result;
     }
@@ -351,7 +351,7 @@ class Obydullah_ERP_Attendance
             $results = $wpdb->get_results($wpdb->prepare(
                 "SELECT s.*, b.name AS branch_name
                 FROM {$this->shifts_table} s
-                LEFT JOIN {$wpdb->prefix}erp_branches b ON s.branch_id = b.id
+                LEFT JOIN {$wpdb->prefix}orerp_branches b ON s.branch_id = b.id
                 WHERE {$where} ORDER BY s.start_time",
                 $prepare_args
             )) ?: [];
@@ -359,7 +359,7 @@ class Obydullah_ERP_Attendance
             $results = $wpdb->get_results($wpdb->prepare(
                 "SELECT s.*, b.name AS branch_name
                 FROM {$this->shifts_table} s
-                LEFT JOIN {$wpdb->prefix}erp_branches b ON s.branch_id = b.id
+                LEFT JOIN {$wpdb->prefix}orerp_branches b ON s.branch_id = b.id
                 WHERE 1 = %d ORDER BY s.start_time",
                 1
             )) ?: [];
@@ -375,9 +375,9 @@ class Obydullah_ERP_Attendance
 
         $id = intval($data['shift_id'] ?? 0);
         $branch_id = intval($data['branch_id'] ?? 0);
-        $name = sanitize_text_field($data['name'] ?? 'orerp_');
-        $start_time = sanitize_text_field($data['start_time'] ?? 'orerp_');
-        $end_time = sanitize_text_field($data['end_time'] ?? 'orerp_');
+        $name = sanitize_text_field($data['name'] ?? '');
+        $start_time = sanitize_text_field($data['start_time'] ?? '');
+        $end_time = sanitize_text_field($data['end_time'] ?? '');
 
         if (!$branch_id || empty($name) || empty($start_time) || empty($end_time)) {
             return new WP_Error('missing_fields', __('Branch, name, start and end time are required.', 'obydullah-restaurant-erp'));
@@ -392,9 +392,9 @@ class Obydullah_ERP_Attendance
         ];
 
         if ($id > 0) {
-            $result = $wpdb->update($this->shifts_table, $save_data, ['id' => $id]);
+            $result = $wpdb->update($this->shifts_table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
         } else {
-            $result = $wpdb->insert($this->shifts_table, $save_data);
+            $result = $wpdb->insert($this->shifts_table, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
             $id = $wpdb->insert_id;
         }
 
@@ -406,7 +406,7 @@ class Obydullah_ERP_Attendance
     public function orerp_delete_shift($id)
     {
         global $wpdb;
-        $result = $wpdb->delete($this->shifts_table, ['id' => intval($id)]) !== false;
+        $result = $wpdb->delete($this->shifts_table, ['id' => intval($id)],['%d']) !== false;
         Obydullah_ERP_Cache::invalidate($this->shifts_table);
         return $result;
     }
@@ -442,7 +442,7 @@ class Obydullah_ERP_Attendance
         }
 
         $employee_id = intval($_POST['employee_id'] ?? 0);
-        $notes = sanitize_textarea_field(wp_unslash($_POST['notes'] ?? 'orerp_'));
+        $notes = sanitize_textarea_field(wp_unslash($_POST['notes'] ?? ''));
 
         $result = $this->orerp_clock_out($employee_id, $notes);
 
@@ -466,8 +466,8 @@ class Obydullah_ERP_Attendance
             'page'        => intval($_GET['page'] ?? 1),
             'employee_id' => intval($_GET['employee_id'] ?? 0),
             'branch_id'   => intval($_GET['branch_id'] ?? 0),
-            'date_from'   => sanitize_text_field(wp_unslash($_GET['date_from'] ?? 'orerp_')),
-            'date_to'     => sanitize_text_field(wp_unslash($_GET['date_to'] ?? 'orerp_')),
+            'date_from'   => sanitize_text_field(wp_unslash($_GET['date_from'] ?? '')),
+            'date_to'     => sanitize_text_field(wp_unslash($_GET['date_to'] ?? '')),
         ]);
 
         wp_send_json_success($result);
@@ -481,7 +481,7 @@ class Obydullah_ERP_Attendance
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_attendance($_POST);
+        $result = $this->orerp_save_attendance(wp_unslash($_POST));
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
@@ -523,7 +523,7 @@ class Obydullah_ERP_Attendance
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_shift($_POST);
+        $result = $this->orerp_save_shift(wp_unslash($_POST));
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());

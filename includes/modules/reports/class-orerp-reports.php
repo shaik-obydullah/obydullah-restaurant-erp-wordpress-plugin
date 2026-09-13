@@ -37,36 +37,36 @@ class Obydullah_ERP_Reports
         ?>
         <div class="wrap">
             <h1><?php esc_html_e('Reports & Analytics', 'obydullah-restaurant-erp'); ?></h1>
-            <div class="orerp-print-actions" style="margin:8px 0 12px;">
+            <div class="orerp-print-actions orerp-print-actions-margin">
                 <button type="button" id="orerp-print-report" class="button"><?php esc_html_e('Print / PDF', 'obydullah-restaurant-erp'); ?></button>
             </div>
             <hr class="wp-header-end">
 
             <div class="orerp-tabs">
-                <a class="tab <?php echo $tab === 'sales' ? 'active' : 'orerp_'; ?>"
+                <a class="tab <?php echo $tab === 'sales' ? 'active' : ''; ?>"
                    href="<?php echo esc_url(admin_url('admin.php?page=orerp-reports&tab=sales')); ?>">
                     <?php esc_html_e('Sales', 'obydullah-restaurant-erp'); ?>
                 </a>
-                <a class="tab <?php echo $tab === 'inventory' ? 'active' : 'orerp_'; ?>"
+                <a class="tab <?php echo $tab === 'inventory' ? 'active' : ''; ?>"
                    href="<?php echo esc_url(admin_url('admin.php?page=orerp-reports&tab=inventory')); ?>">
                     <?php esc_html_e('Inventory', 'obydullah-restaurant-erp'); ?>
                 </a>
-                <a class="tab <?php echo $tab === 'financial' ? 'active' : 'orerp_'; ?>"
+                <a class="tab <?php echo $tab === 'financial' ? 'active' : ''; ?>"
                    href="<?php echo esc_url(admin_url('admin.php?page=orerp-reports&tab=financial')); ?>">
                     <?php esc_html_e('Financial', 'obydullah-restaurant-erp'); ?>
                 </a>
-                <a class="tab <?php echo $tab === 'branches' ? 'active' : 'orerp_'; ?>"
+                <a class="tab <?php echo $tab === 'branches' ? 'active' : ''; ?>"
                    href="<?php echo esc_url(admin_url('admin.php?page=orerp-reports&tab=branches')); ?>">
                     <?php esc_html_e('Branch Comparison', 'obydullah-restaurant-erp'); ?>
                 </a>
-                <a class="tab <?php echo $tab === 'employees' ? 'active' : 'orerp_'; ?>"
+                <a class="tab <?php echo $tab === 'employees' ? 'active' : ''; ?>"
                    href="<?php echo esc_url(admin_url('admin.php?page=orerp-reports&tab=employees')); ?>">
                     <?php esc_html_e('Employee Performance', 'obydullah-restaurant-erp'); ?>
                 </a>
             </div>
 
             <div class="orerp-card">
-                <div class="orerp-filters" style="margin-bottom:15px;">
+                <div class="orerp-filters orerp-filters-compact">
                     <div class="filter-group">
                         <label><?php esc_html_e('From', 'obydullah-restaurant-erp'); ?></label>
                         <input type="date" id="report-date-from" class="regular-text"
@@ -103,14 +103,14 @@ class Obydullah_ERP_Reports
     private function orerp_render_branch_options($selected = 0)
     {
         global $wpdb;
-        $table = $wpdb->prefix . 'erp_branches';
+        $table = $wpdb->prefix . 'orerp_branches';
 
         $cache_key = 'branch_options_active';
         $cached = Obydullah_ERP_Cache::get($cache_key, $table);
         if (false !== $cached) {
             $branches = $cached;
         } else {
-            $branches = $wpdb->get_results($wpdb->prepare("SELECT id, name FROM {$wpdb->prefix}erp_branches WHERE is_active = 1 AND 1 = %d ORDER BY name", 1));
+            $branches = $wpdb->get_results($wpdb->prepare("SELECT id, name FROM {$wpdb->prefix}orerp_branches WHERE is_active = 1 AND 1 = %d ORDER BY name", 1));
             Obydullah_ERP_Cache::set($cache_key, $table, $branches);
         }
 
@@ -127,11 +127,17 @@ class Obydullah_ERP_Reports
     /**
      * Print-friendly view rendered as a standalone HTML document.
      *
+     * Enqueues the report print stylesheet and script so they appear
+     * in the source of the generated document.
+     *
      * @param string $tab Report tab.
      * @return void
      */
     private function orerp_render_print_view($tab)
     {
+        wp_enqueue_style('orerp-report-print', ORERP_URL . 'assets/css/orerp-reports-print.css', array(), ORERP_VERSION);
+        wp_enqueue_script('orerp-report-print', ORERP_URL . 'assets/js/orerp-reports-print.js', array(), ORERP_VERSION, true);
+
         $template_map = [
             'sales'     => 'orerp-sales.php',
             'inventory' => 'orerp-inventory.php',
@@ -172,8 +178,8 @@ class Obydullah_ERP_Reports
 
     private function orerp_get_date_range()
     {
-        $from = sanitize_text_field(wp_unslash($_GET['date_from'] ?? 'orerp_')); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
-        $to   = sanitize_text_field(wp_unslash($_GET['date_to'] ?? 'orerp_')); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
+        $from = sanitize_text_field(wp_unslash($_GET['date_from'] ?? '')); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
+        $to   = sanitize_text_field(wp_unslash($_GET['date_to'] ?? '')); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin GET parameter (navigation/filter), not a state-changing request.
         return [$from, $to];
     }
 
@@ -270,16 +276,16 @@ class Obydullah_ERP_Reports
 
         if ($branch_id > 0) {
             $cache_key = 'employee_performance_list_branch_' . $branch_id;
-            $emp_table = $wpdb->prefix . 'erp_employees';
+            $emp_table = $wpdb->prefix . 'orerp_employees';
             $cached = Obydullah_ERP_Cache::get($cache_key, $emp_table);
             if (false !== $cached) {
                 $employees = $cached;
             } else {
                 $employees = $wpdb->get_results($wpdb->prepare(
                     "SELECT e.id, e.employee_code, e.branch_id, u.display_name AS display_name, b.name AS branch_name
-                    FROM {$wpdb->prefix}erp_employees e
+                    FROM {$wpdb->prefix}orerp_employees e
                     LEFT JOIN {$wpdb->users} u ON e.user_id = u.ID
-                    LEFT JOIN {$wpdb->prefix}erp_branches b ON e.branch_id = b.id
+                    LEFT JOIN {$wpdb->prefix}orerp_branches b ON e.branch_id = b.id
                     WHERE e.is_active = 1 AND e.branch_id = %d
                     ORDER BY display_name ASC",
                     $branch_id
@@ -288,16 +294,16 @@ class Obydullah_ERP_Reports
             }
         } else {
             $cache_key = 'employee_performance_list_all';
-            $emp_table = $wpdb->prefix . 'erp_employees';
+            $emp_table = $wpdb->prefix . 'orerp_employees';
             $cached = Obydullah_ERP_Cache::get($cache_key, $emp_table);
             if (false !== $cached) {
                 $employees = $cached;
             } else {
                 $employees = $wpdb->get_results($wpdb->prepare(
                     "SELECT e.id, e.employee_code, e.branch_id, u.display_name AS display_name, b.name AS branch_name
-                    FROM {$wpdb->prefix}erp_employees e
+                    FROM {$wpdb->prefix}orerp_employees e
                     LEFT JOIN {$wpdb->users} u ON e.user_id = u.ID
-                    LEFT JOIN {$wpdb->prefix}erp_branches b ON e.branch_id = b.id
+                    LEFT JOIN {$wpdb->prefix}orerp_branches b ON e.branch_id = b.id
                     WHERE e.is_active = 1 AND 1 = %d
                     ORDER BY display_name ASC",
                     1
@@ -308,7 +314,7 @@ class Obydullah_ERP_Reports
 
         $results = [];
 
-        $attendance_table = $wpdb->prefix . 'erp_attendance';
+        $attendance_table = $wpdb->prefix . 'orerp_attendance';
 
         foreach ($employees as $emp) {
             $cache_key = 'attendance_stats_' . $emp->id . '_' . $from . '_' . $to;
@@ -319,14 +325,14 @@ class Obydullah_ERP_Reports
                 $attend = $wpdb->get_row($wpdb->prepare(
                     "SELECT COUNT(*) as days_worked,
                             COALESCE(SUM(TIMESTAMPDIFF(MINUTE, clock_in, COALESCE(clock_out, NOW()))), 0) as total_minutes
-                    FROM {$wpdb->prefix}erp_attendance
+                    FROM {$wpdb->prefix}orerp_attendance
                     WHERE employee_id = %d AND DATE(clock_in) BETWEEN %s AND %s",
                     $emp->id, $from, $to
                 ));
                 Obydullah_ERP_Cache::set($cache_key, $attendance_table, $attend);
             }
 
-            $prep_table = $wpdb->prefix . 'erp_prep_tracking';
+            $prep_table = $wpdb->prefix . 'orerp_prep_tracking';
 
             $cache_key = 'prep_tracking_stats_' . $emp->id . '_' . $from . '_' . $to;
             $cached = Obydullah_ERP_Cache::get($cache_key, $prep_table);
@@ -336,7 +342,7 @@ class Obydullah_ERP_Reports
                 $prep = $wpdb->get_row($wpdb->prepare(
                     "SELECT COUNT(*) as tasks_completed,
                             COALESCE(AVG(actual_time_minutes), 0) as avg_time
-                    FROM {$wpdb->prefix}erp_prep_tracking
+                    FROM {$wpdb->prefix}orerp_prep_tracking
                     WHERE employee_id = %d AND completed_at IS NOT NULL
                     AND DATE(started_at) BETWEEN %s AND %s",
                     $emp->id, $from, $to
