@@ -292,7 +292,7 @@ class Obydullah_ERP_Chart_Accounts
         $save_data = compact('code', 'name', 'type', 'parent_id', 'description', 'is_active');
 
         if ($id > 0) {
-            $result = $wpdb->update($this->table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
+            $result = $wpdb->update($this->table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%d']);
         } else {
             $result = $wpdb->insert($this->table, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
             $id = $wpdb->insert_id;
@@ -317,7 +317,11 @@ class Obydullah_ERP_Chart_Accounts
             return new WP_Error('has_entries', __('Cannot delete account with journal entries.', 'obydullah-restaurant-erp'));
         }
 
-        $wpdb->delete($this->table, ['id' => intval($id)],['%d']);
+        $wpdb->delete(
+            $this->table,
+            ['id' => intval($id)],
+            ['%d']
+        );
         Obydullah_ERP_Cache::invalidate($this->table);
         return true;
     }
@@ -436,7 +440,17 @@ class Obydullah_ERP_Chart_Accounts
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_account(wp_unslash($_POST));
+        $data = [
+            'account_id'  => intval($_POST['account_id'] ?? 0),
+            'code'        => sanitize_text_field(wp_unslash($_POST['code'] ?? '')),
+            'name'        => sanitize_text_field(wp_unslash($_POST['name'] ?? '')),
+            'type'        => sanitize_text_field(wp_unslash($_POST['type'] ?? '')),
+            'parent_id'   => intval($_POST['parent_id'] ?? 0),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'is_active'   => isset($_POST['is_active']) ? 1 : 0,
+        ];
+
+        $result = $this->orerp_save_account($data);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }

@@ -330,46 +330,55 @@ class Obydullah_ERP_Journal_Entries
             return new WP_Error('unbalanced', __('Total debit must equal total credit.', 'obydullah-restaurant-erp'));
         }
 
-        $wpdb->insert($this->entries_table, [
-            'entry_number'   => $entry_number,
-            'date'           => $date,
-            'description'    => $description,
-            'reference_type' => $reference_type,
-            'reference_id'   => $reference_id,
-            'branch_id'      => $branch_id > 0 ? $branch_id : null,
-            'is_posted'      => 1,
-            'created_by'     => get_current_user_id(),
-        ],['%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s']);
+        Obydullah_ERP_Helpers::orerp_begin_transaction();
 
-        $entry_id = $wpdb->insert_id;
+        try {
+            $wpdb->insert($this->entries_table, [
+                'entry_number'   => $entry_number,
+                'date'           => $date,
+                'description'    => $description,
+                'reference_type' => $reference_type,
+                'reference_id'   => $reference_id,
+                'branch_id'      => $branch_id > 0 ? $branch_id : null,
+                'is_posted'      => 1,
+                'created_by'     => get_current_user_id(),
+            ],['%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s']);
 
-        if (!$entry_id) {
-            return new WP_Error('create_failed', __('Failed to create journal entry.', 'obydullah-restaurant-erp'));
-        }
+            $entry_id = $wpdb->insert_id;
 
-        Obydullah_ERP_Cache::invalidate($this->entries_table);
-
-        foreach ($lines as $line) {
-            $account_id = intval($line['account_id'] ?? 0);
-            $account_code = sanitize_text_field($line['account_code'] ?? '');
-
-            if (!$account_id && !empty($account_code)) {
-                $account = Obydullah_ERP_Helpers::orerp_get_account_id_by_code($account_code);
-                $account_id = $account;
+            if (!$entry_id) {
+                throw new Exception(__('Failed to create journal entry.', 'obydullah-restaurant-erp'));
             }
 
-            if ($account_id) {
-                $wpdb->insert($this->lines_table, [
-                    'entry_id'    => $entry_id,
-                    'account_id'  => $account_id,
-                    'debit'       => floatval($line['debit'] ?? 0),
-                    'credit'      => floatval($line['credit'] ?? 0),
-                    'description' => sanitize_text_field($line['description'] ?? ''),
-                ],['%s', '%s', '%f', '%f', '%s']);
-            }
-        }
+            Obydullah_ERP_Cache::invalidate($this->entries_table);
 
-        Obydullah_ERP_Cache::invalidate($this->lines_table);
+            foreach ($lines as $line) {
+                $account_id = intval($line['account_id'] ?? 0);
+                $account_code = sanitize_text_field($line['account_code'] ?? '');
+
+                if (!$account_id && !empty($account_code)) {
+                    $account = Obydullah_ERP_Helpers::orerp_get_account_id_by_code($account_code);
+                    $account_id = $account;
+                }
+
+                if ($account_id) {
+                    $wpdb->insert($this->lines_table, [
+                        'entry_id'    => $entry_id,
+                        'account_id'  => $account_id,
+                        'debit'       => floatval($line['debit'] ?? 0),
+                        'credit'      => floatval($line['credit'] ?? 0),
+                        'description' => sanitize_text_field($line['description'] ?? ''),
+                    ],['%s', '%s', '%f', '%f', '%s']);
+                }
+            }
+
+            Obydullah_ERP_Cache::invalidate($this->lines_table);
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('create_failed', $e->getMessage());
+        }
 
         return $entry_id;
     }
@@ -408,47 +417,64 @@ class Obydullah_ERP_Journal_Entries
             return new WP_Error('unbalanced', __('Total debit must equal total credit.', 'obydullah-restaurant-erp'));
         }
 
-        if ($id > 0) {
-            $wpdb->update($this->entries_table, [
-                'entry_number' => $entry_number,
-                'date'         => $date,
-                'description'  => $description,
-                'branch_id'    => $branch_id > 0 ? $branch_id : null,
-            ], ['id' => $id],['%s', '%s', '%s', '%s'], ['%s']);
-            $wpdb->delete($this->lines_table, ['entry_id' => $id], ['%s']);
-        } else {
-            $wpdb->insert($this->entries_table, [
-                'entry_number' => $entry_number,
-                'date'         => $date,
-                'description'  => $description,
-                'branch_id'    => $branch_id > 0 ? $branch_id : null,
-                'is_posted'    => 0,
-                'created_by'   => get_current_user_id(),
-            ],['%s', '%s', '%s', '%s', '%d', '%s']);
-            $id = $wpdb->insert_id;
-        }
+        Obydullah_ERP_Helpers::orerp_begin_transaction();
 
-        Obydullah_ERP_Cache::invalidate($this->entries_table);
-        Obydullah_ERP_Cache::invalidate($this->lines_table);
+        try {
+            if ($id > 0) {
+                $wpdb->update($this->entries_table, [
+                    'entry_number' => $entry_number,
+                    'date'         => $date,
+                    'description'  => $description,
+                    'branch_id'    => $branch_id > 0 ? $branch_id : null,
+                ], ['id' => $id],['%s', '%s', '%s', '%s'], ['%d']);
+                $wpdb->delete(
+                    $this->lines_table,
+                    ['entry_id' => $id],
+                    ['%d']
+                );
+            } else {
+                $wpdb->insert($this->entries_table, [
+                    'entry_number' => $entry_number,
+                    'date'         => $date,
+                    'description'  => $description,
+                    'branch_id'    => $branch_id > 0 ? $branch_id : null,
+                    'is_posted'    => 0,
+                    'created_by'   => get_current_user_id(),
+                ],['%s', '%s', '%s', '%s', '%d', '%s']);
+                $id = $wpdb->insert_id;
 
-        foreach ($lines as $line) {
-            $account_id = intval($line['account_id'] ?? 0);
-            $account_code = sanitize_text_field($line['account_code'] ?? '');
-
-            if (!$account_id && !empty($account_code)) {
-                $account = Obydullah_ERP_Helpers::orerp_get_account_id_by_code($account_code);
-                $account_id = $account;
+                if (!$id) {
+                    throw new Exception(__('Failed to save journal entry.', 'obydullah-restaurant-erp'));
+                }
             }
 
-            if ($account_id) {
-                $wpdb->insert($this->lines_table, [
-                    'entry_id'    => $id,
-                    'account_id'  => $account_id,
-                    'debit'       => floatval($line['debit'] ?? 0),
-                    'credit'      => floatval($line['credit'] ?? 0),
-                    'description' => sanitize_text_field($line['description'] ?? ''),
-                ],['%s', '%s', '%f', '%f', '%s']);
+            Obydullah_ERP_Cache::invalidate($this->entries_table);
+            Obydullah_ERP_Cache::invalidate($this->lines_table);
+
+            foreach ($lines as $line) {
+                $account_id = intval($line['account_id'] ?? 0);
+                $account_code = sanitize_text_field($line['account_code'] ?? '');
+
+                if (!$account_id && !empty($account_code)) {
+                    $account = Obydullah_ERP_Helpers::orerp_get_account_id_by_code($account_code);
+                    $account_id = $account;
+                }
+
+                if ($account_id) {
+                    $wpdb->insert($this->lines_table, [
+                        'entry_id'    => $id,
+                        'account_id'  => $account_id,
+                        'debit'       => floatval($line['debit'] ?? 0),
+                        'credit'      => floatval($line['credit'] ?? 0),
+                        'description' => sanitize_text_field($line['description'] ?? ''),
+                    ],['%s', '%s', '%f', '%f', '%s']);
+                }
             }
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('save_failed', $e->getMessage());
         }
 
         return $id;
@@ -474,7 +500,7 @@ class Obydullah_ERP_Journal_Entries
             return new WP_Error('unbalanced', __('Cannot post unbalanced entry.', 'obydullah-restaurant-erp'));
         }
 
-        $wpdb->update($this->entries_table, ['is_posted' => 1], ['id' => $id],['%d'], ['%s']);
+        $wpdb->update($this->entries_table, ['is_posted' => 1], ['id' => $id],['%d'], ['%d']);
         Obydullah_ERP_Cache::invalidate($this->entries_table);
         return true;
     }
@@ -489,10 +515,28 @@ class Obydullah_ERP_Journal_Entries
             return new WP_Error('already_posted', __('Cannot delete posted entries.', 'obydullah-restaurant-erp'));
         }
 
-        $wpdb->delete($this->lines_table, ['entry_id' => $id], ['%s']);
-        $wpdb->delete($this->entries_table, ['id' => $id], ['%s']);
-        Obydullah_ERP_Cache::invalidate($this->entries_table);
-        Obydullah_ERP_Cache::invalidate($this->lines_table);
+        Obydullah_ERP_Helpers::orerp_begin_transaction();
+
+        try {
+            $wpdb->delete(
+                $this->lines_table,
+                ['entry_id' => $id],
+                ['%d']
+            );
+            $wpdb->delete(
+                $this->entries_table,
+                ['id' => $id],
+                ['%d']
+            );
+            Obydullah_ERP_Cache::invalidate($this->entries_table);
+            Obydullah_ERP_Cache::invalidate($this->lines_table);
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('delete_failed', $e->getMessage());
+        }
+
         return true;
     }
 
@@ -534,7 +578,35 @@ class Obydullah_ERP_Journal_Entries
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_entry(wp_unslash($_POST));
+        $lines = [];
+        foreach (['lines', 'new_lines'] as $source) {
+            if (is_array($_POST[$source] ?? [])) {
+                foreach ($_POST[$source] as $line_key => $line) {
+                    if (!is_array($line)) {
+                        continue;
+                    }
+                    $lines[] = [
+                        'id'           => intval($line['id'] ?? 0),
+                        'account_id'   => intval($line['account_id'] ?? 0),
+                        'account_code' => isset($line['account_code']) ? sanitize_text_field(wp_unslash($line['account_code'])) : '',
+                        'debit'        => floatval($line['debit'] ?? 0),
+                        'credit'       => floatval($line['credit'] ?? 0),
+                        'description'  => sanitize_text_field(wp_unslash($line['description'] ?? '')),
+                    ];
+                }
+            }
+        }
+
+        $data = [
+            'entry_id'     => intval($_POST['entry_id'] ?? 0),
+            'entry_number' => isset($_POST['entry_number']) ? sanitize_text_field(wp_unslash($_POST['entry_number'])) : '',
+            'date'         => sanitize_text_field(wp_unslash($_POST['date'] ?? '')),
+            'description'  => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'branch_id'    => intval($_POST['branch_id'] ?? 0),
+            'lines'        => $lines,
+        ];
+
+        $result = $this->orerp_save_entry($data);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }

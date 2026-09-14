@@ -93,24 +93,33 @@ class Obydullah_ERP_Order_Workflow
             'notes'          => $notes,
         ];
 
-        $result = $wpdb->insert($this->table_orders, $insert, Obydullah_ERP_Helpers::orerp_db_formats($insert));
-        if ($result === false) {
-            return new WP_Error('create_failed', __('Failed to create kitchen order.', 'obydullah-restaurant-erp'));
-        }
+        Obydullah_ERP_Helpers::orerp_begin_transaction();
 
-        $kitchen_order_id = $wpdb->insert_id;
-        Obydullah_ERP_Cache::invalidate($this->table_orders);
+        try {
+            $result = $wpdb->insert($this->table_orders, $insert, Obydullah_ERP_Helpers::orerp_db_formats($insert));
+            if ($result === false) {
+                throw new Exception(__('Failed to create kitchen order.', 'obydullah-restaurant-erp'));
+            }
 
-        foreach ($items as $item) {
-            $wpdb->insert($this->table_items, [
-                'kitchen_order_id' => $kitchen_order_id,
-                'product_id'       => $item['product_id'],
-                'name'             => sanitize_text_field($item['name']),
-                'quantity'         => intval($item['quantity']),
-                'status'           => 'pending',
-            ],['%s', '%s', '%s', '%d', '%s']);
+            $kitchen_order_id = $wpdb->insert_id;
+            Obydullah_ERP_Cache::invalidate($this->table_orders);
+
+            foreach ($items as $item) {
+                $wpdb->insert($this->table_items, [
+                    'kitchen_order_id' => $kitchen_order_id,
+                    'product_id'       => $item['product_id'],
+                    'name'             => sanitize_text_field($item['name']),
+                    'quantity'         => intval($item['quantity']),
+                    'status'           => 'pending',
+                ],['%s', '%s', '%s', '%d', '%s']);
+            }
+            Obydullah_ERP_Cache::invalidate($this->table_items);
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('create_failed', $e->getMessage());
         }
-        Obydullah_ERP_Cache::invalidate($this->table_items);
 
         return $kitchen_order_id;
     }

@@ -181,7 +181,7 @@ class Obydullah_ERP_Attendance
         $wpdb->update($this->attendance_table, [
             'clock_out' => current_time('mysql'),
             'notes'     => $notes,
-        ], ['id' => $record->id],['%s', '%s'], ['%s']);
+        ], ['id' => $record->id],['%s', '%s'], ['%d']);
 
         Obydullah_ERP_Cache::invalidate($this->attendance_table);
 
@@ -295,7 +295,7 @@ class Obydullah_ERP_Attendance
         ];
 
         if ($id > 0) {
-            $result = $wpdb->update($this->attendance_table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
+            $result = $wpdb->update($this->attendance_table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%d']);
         } else {
             $result = $wpdb->insert($this->attendance_table, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
             $id = $wpdb->insert_id;
@@ -309,7 +309,11 @@ class Obydullah_ERP_Attendance
     public function orerp_delete_attendance($id)
     {
         global $wpdb;
-        $result = $wpdb->delete($this->attendance_table, ['id' => intval($id)],['%d']) !== false;
+        $result = $wpdb->delete(
+            $this->attendance_table,
+            ['id' => intval($id)],
+            ['%d']
+        ) !== false;
         Obydullah_ERP_Cache::invalidate($this->attendance_table);
         return $result;
     }
@@ -392,7 +396,7 @@ class Obydullah_ERP_Attendance
         ];
 
         if ($id > 0) {
-            $result = $wpdb->update($this->shifts_table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
+            $result = $wpdb->update($this->shifts_table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%d']);
         } else {
             $result = $wpdb->insert($this->shifts_table, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
             $id = $wpdb->insert_id;
@@ -406,7 +410,11 @@ class Obydullah_ERP_Attendance
     public function orerp_delete_shift($id)
     {
         global $wpdb;
-        $result = $wpdb->delete($this->shifts_table, ['id' => intval($id)],['%d']) !== false;
+        $result = $wpdb->delete(
+            $this->shifts_table,
+            ['id' => intval($id)],
+            ['%d']
+        ) !== false;
         Obydullah_ERP_Cache::invalidate($this->shifts_table);
         return $result;
     }
@@ -481,7 +489,16 @@ class Obydullah_ERP_Attendance
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_attendance(wp_unslash($_POST));
+        $data = [
+            'attendance_id' => intval($_POST['attendance_id'] ?? 0),
+            'employee_id'   => intval($_POST['employee_id'] ?? 0),
+            'branch_id'     => intval($_POST['branch_id'] ?? 0),
+            'clock_in'      => sanitize_text_field(wp_unslash($_POST['clock_in'] ?? '')),
+            'clock_out'     => sanitize_text_field(wp_unslash($_POST['clock_out'] ?? '')),
+            'notes'         => sanitize_textarea_field(wp_unslash($_POST['notes'] ?? '')),
+        ];
+
+        $result = $this->orerp_save_attendance($data);
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
@@ -523,7 +540,15 @@ class Obydullah_ERP_Attendance
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_shift(wp_unslash($_POST));
+        $data = [
+            'shift_id'   => intval($_POST['shift_id'] ?? 0),
+            'branch_id'  => intval($_POST['branch_id'] ?? 0),
+            'name'       => sanitize_text_field(wp_unslash($_POST['name'] ?? '')),
+            'start_time' => sanitize_text_field(wp_unslash($_POST['start_time'] ?? '')),
+            'end_time'   => sanitize_text_field(wp_unslash($_POST['end_time'] ?? '')),
+        ];
+
+        $result = $this->orerp_save_shift($data);
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());

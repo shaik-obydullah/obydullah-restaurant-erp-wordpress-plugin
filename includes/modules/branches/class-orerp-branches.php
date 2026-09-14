@@ -280,7 +280,7 @@ class Obydullah_ERP_Branches
         ];
 
         if ($id > 0) {
-            $result = $wpdb->update($this->table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
+            $result = $wpdb->update($this->table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%d']);
         } else {
             $result = $wpdb->insert($this->table, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
             $id = $wpdb->insert_id;
@@ -310,13 +310,35 @@ class Obydullah_ERP_Branches
             return new WP_Error('has_stock', __('Cannot delete branch with stock items.', 'obydullah-restaurant-erp'));
         }
 
-        $result = $wpdb->delete($this->table, ['id' => $id], ['%s']);
-        $wpdb->delete($stock_table, ['branch_id' => $id], ['%s']);
+Obydullah_ERP_Helpers::orerp_begin_transaction();
 
-        Obydullah_ERP_Cache::invalidate($this->table);
-        Obydullah_ERP_Cache::invalidate($stock_table);
+        try {
+            $result = $wpdb->delete(
+                $this->table,
+                ['id' => $id],
+                ['%d']
+            );
 
-        return $result !== false;
+            if ($result === false) {
+                throw new Exception(__('Failed to delete branch.', 'obydullah-restaurant-erp'));
+            }
+
+            $wpdb->delete(
+                $stock_table,
+                ['branch_id' => $id],
+                ['%d']
+            );
+
+            Obydullah_ERP_Cache::invalidate($this->table);
+            Obydullah_ERP_Cache::invalidate($stock_table);
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('delete_failed', $e->getMessage());
+        }
+
+        return true;
     }
 
     public function orerp_ajax_get_branches()
@@ -356,7 +378,18 @@ class Obydullah_ERP_Branches
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_branch(wp_unslash($_POST));
+        $data = [
+            'branch_id'  => intval($_POST['branch_id'] ?? 0),
+            'name'       => sanitize_text_field(wp_unslash($_POST['name'] ?? '')),
+            'code'       => sanitize_text_field(wp_unslash($_POST['code'] ?? '')),
+            'address'    => sanitize_textarea_field(wp_unslash($_POST['address'] ?? '')),
+            'phone'      => sanitize_text_field(wp_unslash($_POST['phone'] ?? '')),
+            'email'      => sanitize_email($_POST['email'] ?? ''),
+            'manager_id' => intval($_POST['manager_id'] ?? 0),
+            'is_active'  => isset($_POST['is_active']) ? 1 : 0,
+        ];
+
+        $result = $this->orerp_save_branch($data);
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
@@ -489,33 +522,42 @@ class Obydullah_ERP_Branches
 
         $stock_table = $wpdb->prefix . 'orerp_branch_stock';
 
-        $current = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$stock_table} WHERE branch_id = %d AND product_id = %d",
-            $branch_id,
-            $product_id
-        ));
+        Obydullah_ERP_Helpers::orerp_begin_transaction();
 
-        $old_qty = $current ? intval($current->quantity) : 0;
-        $new_qty = max(0, $old_qty + intval($quantity));
+        try {
+            $current = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$stock_table} WHERE branch_id = %d AND product_id = %d",
+                $branch_id,
+                $product_id
+            ));
 
-        if ($current) {
-            $wpdb->update($stock_table, [
-                'quantity'       => $new_qty,
-                'last_restocked' => current_time('mysql'),
-            ], [
-                'branch_id'  => $branch_id,
-                'product_id' => $product_id,
-            ],['%s', '%s'],['%s', '%s']);
-        } else {
-            $wpdb->insert($stock_table, [
-                'branch_id'       => $branch_id,
-                'product_id'      => $product_id,
-                'quantity'        => $new_qty,
-                'last_restocked'  => current_time('mysql'),
-            ],['%s', '%s', '%s', '%s']);
+            $old_qty = $current ? intval($current->quantity) : 0;
+            $new_qty = max(0, $old_qty + intval($quantity));
+
+            if ($current) {
+                $wpdb->update($stock_table, [
+                    'quantity'       => $new_qty,
+                    'last_restocked' => current_time('mysql'),
+                ], [
+                    'branch_id'  => $branch_id,
+                    'product_id' => $product_id,
+                ],['%d', '%s'],['%d', '%d']);
+            } else {
+                $wpdb->insert($stock_table, [
+                    'branch_id'       => $branch_id,
+                    'product_id'      => $product_id,
+                    'quantity'        => $new_qty,
+                    'last_restocked'  => current_time('mysql'),
+                ],['%d', '%d', '%d', '%s']);
+            }
+
+            Obydullah_ERP_Cache::invalidate($stock_table);
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('stock_update_failed', $e->getMessage());
         }
-
-        Obydullah_ERP_Cache::invalidate($stock_table);
 
         return ['old_qty' => $old_qty, 'new_qty' => $new_qty];
     }

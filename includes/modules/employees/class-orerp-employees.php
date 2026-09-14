@@ -404,7 +404,7 @@ class Obydullah_ERP_Employees
         ];
 
         if ($id > 0) {
-            $result = $wpdb->update($this->table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
+            $result = $wpdb->update($this->table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%d']);
         } else {
             $result = $wpdb->insert($this->table, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
             $id = $wpdb->insert_id;
@@ -430,7 +430,11 @@ class Obydullah_ERP_Employees
     public function orerp_delete_employee($id)
     {
         global $wpdb;
-        $wpdb->delete($this->table, ['id' => intval($id)],['%d']);
+        $wpdb->delete(
+            $this->table,
+            ['id' => intval($id)],
+            ['%d']
+        );
         Obydullah_ERP_Cache::invalidate($this->table);
         return true;
     }
@@ -467,7 +471,23 @@ class Obydullah_ERP_Employees
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_employee(wp_unslash($_POST));
+        $data = [
+            'employee_id'      => intval($_POST['employee_id'] ?? 0),
+            'employee_code'    => sanitize_text_field(wp_unslash($_POST['employee_code'] ?? '')),
+            'display_name'     => sanitize_text_field(wp_unslash($_POST['display_name'] ?? '')),
+            'email'            => sanitize_email($_POST['email'] ?? ''),
+            'phone'            => sanitize_text_field(wp_unslash($_POST['phone'] ?? '')),
+            'branch_id'        => intval($_POST['branch_id'] ?? 0),
+            'position'         => sanitize_text_field(wp_unslash($_POST['position'] ?? '')),
+            'hourly_rate'      => floatval($_POST['hourly_rate'] ?? 0),
+            'hire_date'        => sanitize_text_field(wp_unslash($_POST['hire_date'] ?? '')),
+            'user_id'          => intval($_POST['user_id'] ?? 0),
+            'is_active'        => isset($_POST['is_active']) ? 1 : 0,
+            'emergency_contact'=> sanitize_text_field(wp_unslash($_POST['emergency_contact'] ?? '')),
+            'emergency_phone'  => sanitize_text_field(wp_unslash($_POST['emergency_phone'] ?? '')),
+        ];
+
+        $result = $this->orerp_save_employee($data);
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());

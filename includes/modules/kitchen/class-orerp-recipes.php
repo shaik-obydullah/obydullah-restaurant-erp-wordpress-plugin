@@ -340,32 +340,45 @@ class Obydullah_ERP_Recipes
             'is_active'          => $is_active,
         ];
 
-        if ($id > 0) {
-            $wpdb->update($this->table_recipes, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
-            Obydullah_ERP_Cache::invalidate($this->table_recipes);
-        } else {
-            $wpdb->insert($this->table_recipes, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
-            $id = $wpdb->insert_id;
-            Obydullah_ERP_Cache::invalidate($this->table_recipes);
+        Obydullah_ERP_Helpers::orerp_begin_transaction();
+
+        try {
+            if ($id > 0) {
+                $wpdb->update($this->table_recipes, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%d']);
+                Obydullah_ERP_Cache::invalidate($this->table_recipes);
+            } else {
+                $wpdb->insert($this->table_recipes, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
+                $id = $wpdb->insert_id;
+                Obydullah_ERP_Cache::invalidate($this->table_recipes);
+            }
+
+            // Save ingredients
+            $wpdb->delete(
+                $this->table_ingredients,
+                ['recipe_id' => $id],
+                ['%d']
+            );
+
+            $ingredients = $data['ingredients'] ?? [];
+            foreach ($ingredients as $ing) {
+                $product_id_ing = intval($ing['product_id'] ?? 0);
+                if ($product_id_ing <= 0) continue;
+
+                $wpdb->insert($this->table_ingredients, [
+                    'recipe_id'  => $id,
+                    'product_id' => $product_id_ing,
+                    'quantity'   => floatval($ing['quantity'] ?? 0),
+                    'unit'       => sanitize_text_field($ing['unit'] ?? ''),
+                    'notes'      => sanitize_text_field($ing['notes'] ?? ''),
+                ],['%s', '%s', '%f', '%s', '%s']);
+            }
+            Obydullah_ERP_Cache::invalidate($this->table_ingredients);
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('save_failed', $e->getMessage());
         }
-
-        // Save ingredients
-        $wpdb->delete($this->table_ingredients, ['recipe_id' => $id], ['%s']);
-
-        $ingredients = $data['ingredients'] ?? [];
-        foreach ($ingredients as $ing) {
-            $product_id_ing = intval($ing['product_id'] ?? 0);
-            if ($product_id_ing <= 0) continue;
-
-            $wpdb->insert($this->table_ingredients, [
-                'recipe_id'  => $id,
-                'product_id' => $product_id_ing,
-                'quantity'   => floatval($ing['quantity'] ?? 0),
-                'unit'       => sanitize_text_field($ing['unit'] ?? ''),
-                'notes'      => sanitize_text_field($ing['notes'] ?? ''),
-            ],['%s', '%s', '%f', '%s', '%s']);
-        }
-        Obydullah_ERP_Cache::invalidate($this->table_ingredients);
 
         return $id;
     }
@@ -374,10 +387,27 @@ class Obydullah_ERP_Recipes
     {
         global $wpdb;
 
-        $wpdb->delete($this->table_ingredients, ['recipe_id' => intval($id)],['%d']);
-        Obydullah_ERP_Cache::invalidate($this->table_ingredients);
-        $wpdb->delete($this->table_recipes, ['id' => intval($id)],['%d']);
-        Obydullah_ERP_Cache::invalidate($this->table_recipes);
+        Obydullah_ERP_Helpers::orerp_begin_transaction();
+
+        try {
+            $wpdb->delete(
+                $this->table_ingredients,
+                ['recipe_id' => intval($id)],
+                ['%d']
+            );
+            Obydullah_ERP_Cache::invalidate($this->table_ingredients);
+            $wpdb->delete(
+                $this->table_recipes,
+                ['id' => intval($id)],
+                ['%d']
+            );
+            Obydullah_ERP_Cache::invalidate($this->table_recipes);
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('delete_failed', $e->getMessage());
+        }
 
         return true;
     }
@@ -417,7 +447,35 @@ class Obydullah_ERP_Recipes
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_recipe(wp_unslash($_POST));
+        $ingredients = [];
+        if (is_array($_POST['ingredients'] ?? [])) {
+            foreach ($_POST['ingredients'] as $ing_key => $ing) {
+                if (!is_array($ing)) {
+                    continue;
+                }
+                $ing_key = sanitize_key($ing_key);
+                $ingredients[$ing_key] = [
+                    'product_id' => intval($ing['product_id'] ?? 0),
+                    'quantity'   => floatval($ing['quantity'] ?? 0),
+                    'unit'       => sanitize_text_field(wp_unslash($ing['unit'] ?? '')),
+                    'notes'      => sanitize_text_field(wp_unslash($ing['notes'] ?? '')),
+                ];
+            }
+        }
+
+        $data = [
+            'recipe_id'         => intval($_POST['recipe_id'] ?? 0),
+            'product_id'        => intval($_POST['product_id'] ?? 0),
+            'name'              => sanitize_text_field(wp_unslash($_POST['name'] ?? '')),
+            'servings'          => intval($_POST['servings'] ?? 1),
+            'prep_time_minutes' => intval($_POST['prep_time_minutes'] ?? 0),
+            'cook_time_minutes' => intval($_POST['cook_time_minutes'] ?? 0),
+            'instructions'      => sanitize_textarea_field(wp_unslash($_POST['instructions'] ?? '')),
+            'is_active'         => isset($_POST['is_active']) ? 1 : 0,
+            'ingredients'       => $ingredients,
+        ];
+
+        $result = $this->orerp_save_recipe($data);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }

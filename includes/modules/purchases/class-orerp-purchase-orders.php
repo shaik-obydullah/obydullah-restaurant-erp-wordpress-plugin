@@ -365,37 +365,50 @@ class Obydullah_ERP_Purchase_Orders
             'created_by'   => get_current_user_id(),
         ];
 
-        if ($id > 0) {
-            $result = $wpdb->update($this->table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
-            $wpdb->delete($this->items_table, ['purchase_id' => $id], ['%s']);
-        } else {
-            $save_data['status'] = 'draft';
-            $result = $wpdb->insert($this->table, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
-            $id = $wpdb->insert_id;
-        }
-        Obydullah_ERP_Cache::invalidate($this->table);
-        Obydullah_ERP_Cache::invalidate($this->items_table);
+        Obydullah_ERP_Helpers::orerp_begin_transaction();
 
-        if (!$id) {
-            return new WP_Error('save_failed', __('Failed to save purchase order.', 'obydullah-restaurant-erp'));
-        }
-
-        foreach ($items as $item) {
-            $product_id = intval($item['product_id'] ?? 0);
-            $quantity = intval($item['quantity'] ?? 0);
-            $unit_cost = floatval($item['unit_cost'] ?? 0);
-
-            if ($product_id && $quantity > 0) {
-                $wpdb->insert($this->items_table, [
-                    'purchase_id' => $id,
-                    'product_id'  => $product_id,
-                    'quantity'    => $quantity,
-                    'unit_cost'   => $unit_cost,
-                    'total'       => $quantity * $unit_cost,
-                ],['%s', '%s', '%s', '%s', '%s']);
+        try {
+            if ($id > 0) {
+                $result = $wpdb->update($this->table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%d']);
+                $wpdb->delete(
+                    $this->items_table,
+                    ['purchase_id' => $id],
+                    ['%d']
+                );
+            } else {
+                $save_data['status'] = 'draft';
+                $result = $wpdb->insert($this->table, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
+                $id = $wpdb->insert_id;
             }
+            Obydullah_ERP_Cache::invalidate($this->table);
+            Obydullah_ERP_Cache::invalidate($this->items_table);
+
+            if (!$id) {
+                throw new Exception(__('Failed to save purchase order.', 'obydullah-restaurant-erp'));
+            }
+
+            foreach ($items as $item) {
+                $product_id = intval($item['product_id'] ?? 0);
+                $quantity = intval($item['quantity'] ?? 0);
+                $unit_cost = floatval($item['unit_cost'] ?? 0);
+
+                if ($product_id && $quantity > 0) {
+                    $wpdb->insert($this->items_table, [
+                        'purchase_id' => $id,
+                        'product_id'  => $product_id,
+                        'quantity'    => $quantity,
+                        'unit_cost'   => $unit_cost,
+                        'total'       => $quantity * $unit_cost,
+                    ],['%s', '%s', '%s', '%s', '%s']);
+                }
+            }
+            Obydullah_ERP_Cache::invalidate($this->items_table);
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('save_failed', $e->getMessage());
         }
-        Obydullah_ERP_Cache::invalidate($this->items_table);
 
         return $id;
     }
@@ -418,26 +431,39 @@ class Obydullah_ERP_Purchase_Orders
         $items = $this->orerp_get_purchase_items($id);
         $branches = new Obydullah_ERP_Branches();
 
-        foreach ($items as $item) {
-            $remaining = $item->quantity - $item->received_qty;
+        Obydullah_ERP_Helpers::orerp_begin_transaction();
 
-            if ($remaining > 0) {
-                $wpdb->update($this->items_table, [
-                    'received_qty' => $item->quantity,
-                ], ['id' => $item->id], ['%s'], ['%s']);
+        try {
+            foreach ($items as $item) {
+                $remaining = $item->quantity - $item->received_qty;
 
-                $branches->orerp_update_branch_stock($po->branch_id, $item->product_id, $remaining);
+                if ($remaining > 0) {
+                    $wpdb->update($this->items_table, [
+                        'received_qty' => $item->quantity,
+                    ], ['id' => $item->id], ['%d'], ['%d']);
 
-                $this->orerp_create_journal_entry_for_purchase($po, $item, $remaining);
+                    $stock_result = $branches->orerp_update_branch_stock($po->branch_id, $item->product_id, $remaining);
+
+                    if (is_wp_error($stock_result)) {
+                        throw new Exception($stock_result->get_error_message());
+                    }
+
+                    $this->orerp_create_journal_entry_for_purchase($po, $item, $remaining);
+                }
             }
-        }
-        Obydullah_ERP_Cache::invalidate($this->items_table);
+            Obydullah_ERP_Cache::invalidate($this->items_table);
 
-        $wpdb->update($this->table, [
-            'status'        => 'received',
-            'received_date' => current_time('Y-m-d'),
-        ], ['id' => $id],['%s', '%s'], ['%s']);
-        Obydullah_ERP_Cache::invalidate($this->table);
+            $wpdb->update($this->table, [
+                'status'        => 'received',
+                'received_date' => current_time('Y-m-d'),
+            ], ['id' => $id],['%s', '%s'], ['%d']);
+            Obydullah_ERP_Cache::invalidate($this->table);
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('receive_failed', $e->getMessage());
+        }
 
         return true;
     }
@@ -448,7 +474,7 @@ class Obydullah_ERP_Purchase_Orders
             $journal = new Obydullah_ERP_Journal_Entries();
             $amount = $qty * $item->unit_cost;
 
-            $journal->orerp_create_entry([
+            $result = $journal->orerp_create_entry([
                 'date'          => current_time('Y-m-d'),
                 'description'   => sprintf('PO %s - %s', $po->po_number, $item->product_name),
                 'reference_type' => 'purchase',
@@ -458,6 +484,10 @@ class Obydullah_ERP_Purchase_Orders
                     ['account_code' => '2000', 'debit' => 0, 'credit' => $amount],
                 ],
             ]);
+
+            if (is_wp_error($result)) {
+                throw new Exception($result->get_error_message());
+            }
         }
     }
 
@@ -476,32 +506,54 @@ class Obydullah_ERP_Purchase_Orders
             return new WP_Error('invalid_data', __('Purchase and amount are required.', 'obydullah-restaurant-erp'));
         }
 
-        $wpdb->insert($this->payments_table, [
-            'purchase_id'    => $purchase_id,
-            'amount'         => $amount,
-            'payment_method' => $payment_method,
-            'reference'      => $reference,
-            'notes'          => $notes,
-            'payment_date'   => $payment_date,
-        ],['%s', '%s', '%s', '%s', '%s', '%s']);
-        Obydullah_ERP_Cache::invalidate($this->payments_table);
+        $payment_id = 0;
 
-        $po = $this->orerp_get_purchase($purchase_id);
-        if ($po) {
-            $journal = new Obydullah_ERP_Journal_Entries();
-            $journal->orerp_create_entry([
-                'date'          => $payment_date,
-                'description'   => sprintf('Payment for PO %s', $po->po_number),
-                'reference_type' => 'purchase_payment',
-                'reference_id'   => $wpdb->insert_id,
-                'lines'          => [
-                    ['account_code' => '2000', 'debit' => $amount, 'credit' => 0],
-                    ['account_code' => '1000', 'debit' => 0, 'credit' => $amount],
-                ],
-            ]);
+        Obydullah_ERP_Helpers::orerp_begin_transaction();
+
+        try {
+            $wpdb->insert($this->payments_table, [
+                'purchase_id'    => $purchase_id,
+                'amount'         => $amount,
+                'payment_method' => $payment_method,
+                'reference'      => $reference,
+                'notes'          => $notes,
+                'payment_date'   => $payment_date,
+            ],['%d', '%f', '%s', '%s', '%s', '%s']);
+
+            $payment_id = $wpdb->insert_id;
+
+            if (!$payment_id) {
+                throw new Exception(__('Failed to add payment.', 'obydullah-restaurant-erp'));
+            }
+
+            Obydullah_ERP_Cache::invalidate($this->payments_table);
+
+            $po = $this->orerp_get_purchase($purchase_id);
+            if ($po) {
+                $journal = new Obydullah_ERP_Journal_Entries();
+                $entry_result = $journal->orerp_create_entry([
+                    'date'          => $payment_date,
+                    'description'   => sprintf('Payment for PO %s', $po->po_number),
+                    'reference_type' => 'purchase_payment',
+                    'reference_id'   => $payment_id,
+                    'lines'          => [
+                        ['account_code' => '2000', 'debit' => $amount, 'credit' => 0],
+                        ['account_code' => '1000', 'debit' => 0, 'credit' => $amount],
+                    ],
+                ]);
+
+                if (is_wp_error($entry_result)) {
+                    throw new Exception($entry_result->get_error_message());
+                }
+            }
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('payment_failed', $e->getMessage());
         }
 
-        return $wpdb->insert_id;
+        return $payment_id;
     }
 
     public function orerp_get_payments($purchase_id)
@@ -524,12 +576,35 @@ class Obydullah_ERP_Purchase_Orders
     public function orerp_delete_purchase($id)
     {
         global $wpdb;
-        $wpdb->delete($this->items_table, ['purchase_id' => intval($id)],['%d']);
-        $wpdb->delete($this->payments_table, ['purchase_id' => intval($id)],['%d']);
-        $wpdb->delete($this->table, ['id' => intval($id)],['%d']);
-        Obydullah_ERP_Cache::invalidate($this->items_table);
-        Obydullah_ERP_Cache::invalidate($this->payments_table);
-        Obydullah_ERP_Cache::invalidate($this->table);
+
+        Obydullah_ERP_Helpers::orerp_begin_transaction();
+
+        try {
+            $wpdb->delete(
+                $this->items_table,
+                ['purchase_id' => intval($id)],
+                ['%d']
+            );
+            $wpdb->delete(
+                $this->payments_table,
+                ['purchase_id' => intval($id)],
+                ['%d']
+            );
+            $wpdb->delete(
+                $this->table,
+                ['id' => intval($id)],
+                ['%d']
+            );
+            Obydullah_ERP_Cache::invalidate($this->items_table);
+            Obydullah_ERP_Cache::invalidate($this->payments_table);
+            Obydullah_ERP_Cache::invalidate($this->table);
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('delete_failed', $e->getMessage());
+        }
+
         return true;
     }
 
@@ -559,7 +634,34 @@ class Obydullah_ERP_Purchase_Orders
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_purchase(wp_unslash($_POST));
+        $items = [];
+        foreach (['items', 'new_items'] as $source) {
+            if (is_array($_POST[$source] ?? [])) {
+                foreach ($_POST[$source] as $item_key => $item) {
+                    if (!is_array($item)) {
+                        continue;
+                    }
+                    $items[] = [
+                        'product_id' => intval($item['product_id'] ?? 0),
+                        'quantity'   => intval($item['quantity'] ?? 0),
+                        'unit_cost'  => floatval($item['unit_cost'] ?? 0),
+                    ];
+                }
+            }
+        }
+
+        $data = [
+            'purchase_id'   => intval($_POST['purchase_id'] ?? 0),
+            'po_number'     => sanitize_text_field(wp_unslash($_POST['po_number'] ?? '')),
+            'supplier_id'   => intval($_POST['supplier_id'] ?? 0),
+            'branch_id'     => intval($_POST['branch_id'] ?? 0),
+            'expected_date' => sanitize_text_field(wp_unslash($_POST['expected_date'] ?? '')),
+            'tax_amount'    => floatval($_POST['tax_amount'] ?? 0),
+            'notes'         => sanitize_textarea_field(wp_unslash($_POST['notes'] ?? '')),
+            'items'         => $items,
+        ];
+
+        $result = $this->orerp_save_purchase($data);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }
@@ -620,7 +722,16 @@ class Obydullah_ERP_Purchase_Orders
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_add_payment(wp_unslash($_POST));
+        $data = [
+            'purchase_id'    => intval($_POST['purchase_id'] ?? 0),
+            'amount'         => floatval($_POST['amount'] ?? 0),
+            'payment_method' => sanitize_text_field(wp_unslash($_POST['payment_method'] ?? 'cash')),
+            'reference'      => sanitize_text_field(wp_unslash($_POST['reference'] ?? '')),
+            'notes'          => sanitize_textarea_field(wp_unslash($_POST['notes'] ?? '')),
+            'payment_date'   => sanitize_text_field(wp_unslash($_POST['payment_date'] ?? current_time('Y-m-d'))),
+        ];
+
+        $result = $this->orerp_add_payment($data);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }

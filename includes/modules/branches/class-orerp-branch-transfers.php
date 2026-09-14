@@ -150,30 +150,39 @@ class Obydullah_ERP_Branch_Transfers
             return new WP_Error('no_items', __('Please add at least one item.', 'obydullah-restaurant-erp'));
         }
 
-        $wpdb->insert($this->table, [
-            'from_branch_id' => $from_branch,
-            'to_branch_id'   => $to_branch,
-            'status'         => 'pending',
-            'notes'          => $notes,
-            'created_by'     => get_current_user_id(),
-        ],['%s', '%s', '%s', '%s', '%s']);
+        Obydullah_ERP_Helpers::orerp_begin_transaction();
 
-        $transfer_id = $wpdb->insert_id;
+        try {
+            $wpdb->insert($this->table, [
+                'from_branch_id' => $from_branch,
+                'to_branch_id'   => $to_branch,
+                'status'         => 'pending',
+                'notes'          => $notes,
+                'created_by'     => get_current_user_id(),
+            ],['%d', '%d', '%s', '%s', '%d']);
 
-        if (!$transfer_id) {
-            return new WP_Error('create_failed', __('Failed to create transfer.', 'obydullah-restaurant-erp'));
+            $transfer_id = $wpdb->insert_id;
+
+            if (!$transfer_id) {
+                throw new Exception(__('Failed to create transfer.', 'obydullah-restaurant-erp'));
+            }
+
+            foreach ($items as $item) {
+                $wpdb->insert($this->items_table, [
+                    'transfer_id' => $transfer_id,
+                    'product_id'  => intval($item['product_id']),
+                    'quantity'    => intval($item['quantity']),
+                ],['%d', '%d', '%d']);
+            }
+
+            Obydullah_ERP_Cache::invalidate($this->table);
+            Obydullah_ERP_Cache::invalidate($this->items_table);
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('create_failed', $e->getMessage());
         }
-
-        foreach ($items as $item) {
-            $wpdb->insert($this->items_table, [
-                'transfer_id' => $transfer_id,
-                'product_id'  => intval($item['product_id']),
-                'quantity'    => intval($item['quantity']),
-            ],['%s', '%d', '%d']);
-        }
-
-        Obydullah_ERP_Cache::invalidate($this->table);
-        Obydullah_ERP_Cache::invalidate($this->items_table);
 
         return $transfer_id;
     }
@@ -195,26 +204,44 @@ class Obydullah_ERP_Branch_Transfers
 
         $branches = new Obydullah_ERP_Branches();
 
-        foreach ($transfer->items as $item) {
-            $received_qty = intval($received_items[$item->id][$item->product_id] ?? $item->quantity);
+        Obydullah_ERP_Helpers::orerp_begin_transaction();
 
-            $wpdb->update($this->items_table, [
-                'received_quantity' => $received_qty,
-            ], ['id' => $item->id], ['%s'], ['%s']);
+        try {
+            foreach ($transfer->items as $item) {
+                $received_qty = intval($received_items[$item->id][$item->product_id] ?? $item->quantity);
 
-            if ($received_qty > 0) {
-                $branches->orerp_update_branch_stock($transfer->from_branch_id, $item->product_id, -$received_qty);
-                $branches->orerp_update_branch_stock($transfer->to_branch_id, $item->product_id, $received_qty);
+                $wpdb->update($this->items_table, [
+                    'received_quantity' => $received_qty,
+                ], ['id' => $item->id], ['%d'], ['%d']);
+
+                if ($received_qty > 0) {
+                    $stock_result = $branches->orerp_update_branch_stock($transfer->from_branch_id, $item->product_id, -$received_qty);
+
+                    if (is_wp_error($stock_result)) {
+                        throw new Exception($stock_result->get_error_message());
+                    }
+
+                    $stock_result = $branches->orerp_update_branch_stock($transfer->to_branch_id, $item->product_id, $received_qty);
+
+                    if (is_wp_error($stock_result)) {
+                        throw new Exception($stock_result->get_error_message());
+                    }
+                }
             }
+
+            $wpdb->update($this->table, [
+                'status'      => 'received',
+                'received_at' => current_time('mysql'),
+            ], ['id' => $id],['%s', '%s'], ['%d']);
+
+            Obydullah_ERP_Cache::invalidate($this->table);
+            Obydullah_ERP_Cache::invalidate($this->items_table);
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('receive_failed', $e->getMessage());
         }
-
-        $wpdb->update($this->table, [
-            'status'      => 'received',
-            'received_at' => current_time('mysql'),
-        ], ['id' => $id],['%s', '%s'], ['%s']);
-
-        Obydullah_ERP_Cache::invalidate($this->table);
-        Obydullah_ERP_Cache::invalidate($this->items_table);
 
         return true;
     }
@@ -236,7 +263,7 @@ class Obydullah_ERP_Branch_Transfers
 
         $wpdb->update($this->table, [
             'status' => 'cancelled',
-        ], ['id' => $id], ['%s'], ['%s']);
+        ], ['id' => $id], ['%s'], ['%d']);
 
         Obydullah_ERP_Cache::invalidate($this->table);
 
@@ -269,7 +296,27 @@ class Obydullah_ERP_Branch_Transfers
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_create_transfer(wp_unslash($_POST));
+        $raw_items = json_decode(stripslashes(wp_unslash($_POST['items'] ?? '[]')), true);
+        $items = [];
+        if (is_array($raw_items)) {
+            foreach ($raw_items as $item) {
+                if (is_array($item)) {
+                    $items[] = [
+                        'product_id' => intval($item['product_id'] ?? 0),
+                        'quantity'   => intval($item['quantity'] ?? 0),
+                    ];
+                }
+            }
+        }
+
+        $data = [
+            'from_branch_id' => intval($_POST['from_branch_id'] ?? 0),
+            'to_branch_id'   => intval($_POST['to_branch_id'] ?? 0),
+            'notes'          => sanitize_textarea_field(wp_unslash($_POST['notes'] ?? '')),
+            'items'          => wp_json_encode($items),
+        ];
+
+        $result = $this->orerp_create_transfer($data);
 
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());

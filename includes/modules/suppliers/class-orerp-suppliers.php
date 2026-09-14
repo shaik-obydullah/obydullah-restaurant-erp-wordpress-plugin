@@ -251,7 +251,7 @@ class Obydullah_ERP_Suppliers
         $save_data = compact('name', 'code', 'contact_person', 'email', 'phone', 'address', 'payment_terms', 'is_active');
 
         if ($id > 0) {
-            $result = $wpdb->update($this->table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
+            $result = $wpdb->update($this->table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%d']);
         } else {
             $result = $wpdb->insert($this->table, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
             $id = $wpdb->insert_id;
@@ -265,10 +265,35 @@ class Obydullah_ERP_Suppliers
     public function orerp_delete_supplier($id)
     {
         global $wpdb;
-        $wpdb->delete($this->table, ['id' => intval($id)],['%d']);
-        $wpdb->delete($this->products_table, ['supplier_id' => intval($id)],['%d']);
-        Obydullah_ERP_Cache::invalidate($this->table);
-        Obydullah_ERP_Cache::invalidate($this->products_table);
+
+        Obydullah_ERP_Helpers::orerp_begin_transaction();
+
+        try {
+            $result = $wpdb->delete(
+                $this->table,
+                ['id' => intval($id)],
+                ['%d']
+            );
+
+            if ($result === false) {
+                throw new Exception(__('Failed to delete supplier.', 'obydullah-restaurant-erp'));
+            }
+
+            $wpdb->delete(
+                $this->products_table,
+                ['supplier_id' => intval($id)],
+                ['%d']
+            );
+
+            Obydullah_ERP_Cache::invalidate($this->table);
+            Obydullah_ERP_Cache::invalidate($this->products_table);
+
+            Obydullah_ERP_Helpers::orerp_commit_transaction();
+        } catch (Exception $e) {
+            Obydullah_ERP_Helpers::orerp_rollback_transaction();
+            return new WP_Error('delete_failed', $e->getMessage());
+        }
+
         return true;
     }
 
@@ -311,14 +336,14 @@ class Obydullah_ERP_Suppliers
         $save_data = compact('supplier_id', 'product_id', 'supplier_sku', 'unit_cost', 'lead_time_days', 'min_order_qty');
 
         if ($id > 0) {
-            $result = $wpdb->update($this->products_table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
+            $result = $wpdb->update($this->products_table, $save_data, ['id' => $id], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%d']);
         } else {
             $existing = $wpdb->get_var($wpdb->prepare(
                 "SELECT id FROM {$this->products_table} WHERE supplier_id = %d AND product_id = %d",
                 $supplier_id, $product_id
             ));
             if ($existing) {
-                $result = $wpdb->update($this->products_table, $save_data, ['id' => $existing], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%s']);
+                $result = $wpdb->update($this->products_table, $save_data, ['id' => $existing], Obydullah_ERP_Helpers::orerp_db_formats($save_data), ['%d']);
                 $id = $existing;
             } else {
                 $result = $wpdb->insert($this->products_table, $save_data, Obydullah_ERP_Helpers::orerp_db_formats($save_data));
@@ -334,7 +359,11 @@ class Obydullah_ERP_Suppliers
     public function orerp_delete_supplier_product($id)
     {
         global $wpdb;
-        $result = $wpdb->delete($this->products_table, ['id' => intval($id)],['%d']) !== false;
+        $result = $wpdb->delete(
+            $this->products_table,
+            ['id' => intval($id)],
+            ['%d']
+        ) !== false;
         Obydullah_ERP_Cache::invalidate($this->products_table);
         return $result;
     }
@@ -362,7 +391,19 @@ class Obydullah_ERP_Suppliers
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_supplier(wp_unslash($_POST));
+        $data = [
+            'supplier_id'    => intval($_POST['supplier_id'] ?? 0),
+            'name'           => sanitize_text_field(wp_unslash($_POST['name'] ?? '')),
+            'code'           => sanitize_text_field(wp_unslash($_POST['code'] ?? '')),
+            'contact_person' => sanitize_text_field(wp_unslash($_POST['contact_person'] ?? '')),
+            'email'          => sanitize_email($_POST['email'] ?? ''),
+            'phone'          => sanitize_text_field(wp_unslash($_POST['phone'] ?? '')),
+            'address'        => sanitize_textarea_field(wp_unslash($_POST['address'] ?? '')),
+            'payment_terms'  => sanitize_text_field(wp_unslash($_POST['payment_terms'] ?? '')),
+            'is_active'      => isset($_POST['is_active']) ? 1 : 0,
+        ];
+
+        $result = $this->orerp_save_supplier($data);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }
@@ -420,7 +461,17 @@ class Obydullah_ERP_Suppliers
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_save_supplier_product(wp_unslash($_POST));
+        $data = [
+            'id'             => intval($_POST['id'] ?? 0),
+            'supplier_id'    => intval($_POST['supplier_id'] ?? 0),
+            'product_id'     => intval($_POST['product_id'] ?? 0),
+            'supplier_sku'   => sanitize_text_field(wp_unslash($_POST['supplier_sku'] ?? '')),
+            'unit_cost'      => floatval($_POST['unit_cost'] ?? 0),
+            'lead_time_days' => intval($_POST['lead_time_days'] ?? 0),
+            'min_order_qty'  => intval($_POST['min_order_qty'] ?? 1),
+        ];
+
+        $result = $this->orerp_save_supplier_product($data);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }

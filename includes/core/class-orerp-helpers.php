@@ -13,6 +13,40 @@ if (!defined('ABSPATH')) {
 
 class Obydullah_ERP_Helpers
 {
+    private static $transaction_depth = 0;
+
+    public static function orerp_begin_transaction()
+    {
+        global $wpdb;
+
+        if (self::$transaction_depth === 0) {
+            $wpdb->query('START TRANSACTION');
+        }
+
+        self::$transaction_depth++;
+    }
+
+    public static function orerp_commit_transaction()
+    {
+        global $wpdb;
+
+        if (self::$transaction_depth > 0) {
+            self::$transaction_depth--;
+
+            if (self::$transaction_depth === 0) {
+                $wpdb->query('COMMIT');
+            }
+        }
+    }
+
+    public static function orerp_rollback_transaction()
+    {
+        global $wpdb;
+
+        self::$transaction_depth = 0;
+        $wpdb->query('ROLLBACK');
+    }
+
     public static function can($capability)
     {
         if (current_user_can('manage_options')) {

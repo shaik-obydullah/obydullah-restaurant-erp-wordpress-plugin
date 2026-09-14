@@ -504,7 +504,7 @@ class Obydullah_ERP_Kitchen_Display
         $wpdb->update($this->table_prep, [
             'completed_at'        => $now,
             'actual_time_minutes' => $actual_minutes,
-        ], ['id' => intval($prep_id)],['%s', '%s'],['%d']);
+        ], ['id' => intval($prep_id)],['%s', '%d'],['%d']);
         Obydullah_ERP_Cache::invalidate($this->table_prep);
 
         return ['actual_time_minutes' => $actual_minutes];
@@ -588,7 +588,16 @@ class Obydullah_ERP_Kitchen_Display
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_create_order(wp_unslash($_POST));
+        $data = [
+            'order_id'       => intval($_POST['order_id'] ?? 0),
+            'branch_id'      => intval($_POST['branch_id'] ?? 0),
+            'station'        => sanitize_text_field(wp_unslash($_POST['station'] ?? '')),
+            'priority'       => intval($_POST['priority'] ?? 0),
+            'estimated_time' => intval($_POST['estimated_time'] ?? 15),
+            'notes'          => sanitize_textarea_field(wp_unslash($_POST['notes'] ?? '')),
+        ];
+
+        $result = $this->orerp_create_order($data);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }
@@ -603,7 +612,14 @@ class Obydullah_ERP_Kitchen_Display
             wp_send_json_error(__('Insufficient permissions', 'obydullah-restaurant-erp'));
         }
 
-        $result = $this->orerp_add_prep_tracking(wp_unslash($_POST));
+        $data = [
+            'kitchen_order_id' => intval($_POST['kitchen_order_id'] ?? 0),
+            'recipe_id'        => intval($_POST['recipe_id'] ?? 0),
+            'employee_id'      => intval($_POST['employee_id'] ?? 0),
+            'notes'            => sanitize_textarea_field(wp_unslash($_POST['notes'] ?? '')),
+        ];
+
+        $result = $this->orerp_add_prep_tracking($data);
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
         }
