@@ -1,19 +1,21 @@
 === Obydullah Restaurant ERP ===
-Contributors: obydullah
-Tags: restaurant, erp, accounting, inventory, management
-Text Domain: obydullah-restaurant-erp
-Requires at least: 6.0
-Tested up to: 7.1
-Requires PHP: 8.0
-WooCommerce requires at least: 8.0
-WooCommerce tested up to: 11.0
-Stable tag: 1.0.0
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+**Contributors:** obydullah
+**Tags:** restaurant, erp, accounting, inventory, management
+**Requires at least:** 6.0
+**Tested up to:** 7.1
+**Requires PHP:** 8.0 ![PHP](https://img.shields.io/badge/PHP-8.0-8892BF?style=flat&logo=php&logoColor=white)
+**WooCommerce requires at least:** 8.0
+**WooCommerce tested up to:** 11.0
+**Stable tag:** 1.0.0
+**License:** GPLv2 or later
+**License URI:** https://www.gnu.org/licenses/gpl-2.0.html
+
+> [View on WordPress.org](https://wordpress.org/plugins/obydullah-restaurant-erp/) | [Download](https://downloads.wordpress.org/plugin/obydullah-restaurant-erp.zip)
 
 A complete restaurant management system with branches, employees, suppliers, purchases, accounting, kitchen operations, and reports.
 
-== Description ==
+## Description
 
 A complete restaurant management system with branches, employees, suppliers, purchases, accounting, kitchen operations, and reports. Integrates with WooCommerce and Obydullah Restaurant POS.
 
@@ -34,28 +36,28 @@ A complete restaurant management system with branches, employees, suppliers, pur
 * `restaurant_kitchen_staff`
 * `restaurant_cashier`
 
-== Installation ==
+## Installation
 
 1. Upload the `obydullah-restaurant-erp` folder to the `/wp-content/plugins/` directory.
 2. Activate the plugin through the 'Plugins' menu in WordPress.
 3. Ensure WooCommerce is installed and active.
 4. Go to Restaurant ERP → Settings to configure currency, date format, and tax rate.
 
-== Frequently Asked Questions ==
+## Frequently Asked Questions
 
-= Does this plugin require WooCommerce? =
+**Does this plugin require WooCommerce?**
 
 Yes. WooCommerce must be installed and active for the plugin to function.
 
-= What are the database requirements? =
+**What are the database requirements?**
 
 The plugin creates 18 custom tables on activation for branches, employees, suppliers, purchases, accounting, kitchen operations, and reports.
 
-= Does it support multiple branches? =
+**Does it support multiple branches?**
 
 Yes. You can create unlimited branches with per-branch inventory, employee assignments, and inter-branch transfers.
 
-== Screenshots ==
+## Screenshots
 
 1. Dashboard overview
 2. Branch management
@@ -64,7 +66,12 @@ Yes. You can create unlimited branches with per-branch inventory, employee assig
 5. Journal entries
 6. Kitchen display system
 
-== Changelog ==
+## Changelog
 
-= 1.0.0 =
+### 1.0.0
+
 * Initial release
+
+---
+
+**GitHub Repository:** [obydullah/obydullah-restaurant-erp](https://wordpress.org/plugins/obydullah-restaurant-erp/)
